@@ -1,3 +1,4 @@
+/*
 package repositories
 
 import "ars_projekat/model"
@@ -13,3 +14,4 @@ func (c ConfigurationConsulRepository) Get() {
 func NewConfigConsulRepository() model.ConfigurationRepository {
 	return ConfigurationConsulRepository{}
 }
+/*

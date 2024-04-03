@@ -42,9 +42,13 @@ mislim da nam nece biti potreban FindAll zbog toga sto moze samo po IDu da se po
 */
 
 type ConfigurationRepository interface {
-	Delete()
-	Update()
-	FindById()
-	Create()
+	Add(config Configuration)
+	Get(name string, version int) (Configuration, error)
+	/*
+		Delete()
+		Update()
+		FindById()
+		Create()
+	*/
 	//TODO add CRUD methods
 }

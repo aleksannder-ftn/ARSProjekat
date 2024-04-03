@@ -2,7 +2,6 @@ package services
 
 import (
 	"ars_projekat/model"
-	"fmt"
 )
 
 type ConfigurationService struct {
@@ -15,7 +14,10 @@ func NewConfigurationService(repo model.ConfigurationRepository) ConfigurationSe
 	}
 }
 
-// TODO add CRUD
-func (s ConfigurationService) Hello() {
-	fmt.Println("Hello from config service")
+func (s ConfigurationService) Add(config model.Configuration) {
+	s.repo.Add(config)
+}
+
+func (s ConfigurationService) Get(name string, version int) (model.Configuration, error) {
+	return s.repo.Get(name, version)
 }
