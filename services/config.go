@@ -22,10 +22,10 @@ func (s ConfigurationService) Get(name string, version int) (model.Configuration
 	return s.repo.Get(name, version)
 }
 
-func (s ConfigurationService) Update(config model.Configuration) (model.Configuration, error) {
+func (s ConfigurationService) Update(config model.Configuration) error {
 	return s.repo.Update(config)
 }
 
-func (s ConfigurationService) Delete(config model.Configuration) (model.Configuration, error) {
+func (s ConfigurationService) Delete(config model.Configuration) error {
 	return s.repo.Delete(config)
 }
