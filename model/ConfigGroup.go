@@ -34,6 +34,6 @@ ce config group imati neke dodatne nacine za pretragu. To cemo prodiskutovati na
 type ConfigurationGroupRepository interface {
 	Add(configGroup ConfigurationGroup)
 	Get(name string, version int) (ConfigurationGroup, error)
-	Delete(configGroup ConfigurationGroup)
-	Update(configGroup ConfigurationGroup)
+	Delete(configGroup ConfigurationGroup) error
+	Update(configGroup ConfigurationGroup) error
 }
