@@ -42,8 +42,8 @@ mislim da nam nece biti potreban FindAll zbog toga sto moze samo po IDu da se po
 */
 
 type ConfigurationRepository interface {
-	Add(config Configuration)
-	Get(name string, version int) (Configuration, error)
+	Add(config *Configuration)
+	Get(name string, version Version) (Configuration, error)
 	Delete(config Configuration) error
-	Update(config Configuration) error
+	Update(config Configuration) (Configuration, error)
 }

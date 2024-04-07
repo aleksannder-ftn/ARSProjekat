@@ -18,7 +18,7 @@ func (s ConfigurationGroupService) Add(configGroup model.ConfigurationGroup) {
 	s.repo.Add(configGroup)
 }
 
-func (s ConfigurationGroupService) Get(name string, version int) (model.ConfigurationGroup, error) {
+func (s ConfigurationGroupService) Get(name string, version model.Version) (model.ConfigurationGroup, error) {
 	return s.repo.Get(name, version)
 }
 

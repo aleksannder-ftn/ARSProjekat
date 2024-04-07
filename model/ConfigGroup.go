@@ -33,7 +33,7 @@ ce config group imati neke dodatne nacine za pretragu. To cemo prodiskutovati na
 */
 type ConfigurationGroupRepository interface {
 	Add(configGroup ConfigurationGroup)
-	Get(name string, version int) (ConfigurationGroup, error)
+	Get(name string, version Version) (ConfigurationGroup, error)
 	Delete(configGroup ConfigurationGroup) error
 	Update(configGroup ConfigurationGroup) error
 }
