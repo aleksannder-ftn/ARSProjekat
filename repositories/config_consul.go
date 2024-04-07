@@ -1,6 +1,6 @@
-/*
 package repositories
 
+/*
 import "ars_projekat/model"
 
 type ConfigurationConsulRepository struct {
@@ -14,4 +14,4 @@ func (c ConfigurationConsulRepository) Get() {
 func NewConfigConsulRepository() model.ConfigurationRepository {
 	return ConfigurationConsulRepository{}
 }
-/*
+*/
