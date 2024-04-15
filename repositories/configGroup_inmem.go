@@ -34,14 +34,15 @@ func (c ConfigGroupInMemoryRepository) Delete(configGroup model.ConfigurationGro
 	return nil
 }
 
-func (c ConfigGroupInMemoryRepository) Update(configGroup model.ConfigurationGroup) error {
+func (c ConfigGroupInMemoryRepository) Update(configGroup model.ConfigurationGroup) (model.ConfigurationGroup, error) {
 	key := fmt.Sprintf("%s/%#v", configGroup.Name, configGroup.Version)
 	_, ok := c.configGroups[key]
 	if !ok {
-		return errors.New("config not found")
+		return model.ConfigurationGroup{}, errors.New("config not found")
 	}
-	c.configGroups[key] = configGroup
-	return nil
+	configGroup.Version = model.IncrementVersion(configGroup.Version)
+	c.Add(configGroup)
+	return configGroup, nil
 }
 
 func NewConfigGroupInMemoryRepository() model.ConfigurationGroupRepository {

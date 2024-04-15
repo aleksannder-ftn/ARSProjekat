@@ -3,7 +3,7 @@ package model
 // ConfigurationGroup TODO implement version as struct
 type ConfigurationGroup struct {
 	Name           string          `json:"name"`
-	Id             int32           `json:"id"`
+	Id             int64           `json:"id"`
 	Version        Version         `json:"version"`
 	Configurations []Configuration `json:"configurations"`
 }
@@ -12,7 +12,7 @@ func (cg *ConfigurationGroup) SetName(name string) {
 	cg.Name = name
 }
 
-func (cg *ConfigurationGroup) SetId(id int32) {
+func (cg *ConfigurationGroup) SetId(id int64) {
 	cg.Id = id
 }
 
@@ -35,5 +35,5 @@ type ConfigurationGroupRepository interface {
 	Add(configGroup ConfigurationGroup)
 	Get(name string, version Version) (ConfigurationGroup, error)
 	Delete(configGroup ConfigurationGroup) error
-	Update(configGroup ConfigurationGroup) error
+	Update(configGroup ConfigurationGroup) (ConfigurationGroup, error)
 }
