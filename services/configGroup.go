@@ -22,7 +22,7 @@ func (s ConfigurationGroupService) Get(name string, version model.Version) (mode
 	return s.repo.Get(name, version)
 }
 
-func (s ConfigurationGroupService) Update(configGroup model.ConfigurationGroup) error {
+func (s ConfigurationGroupService) Update(configGroup model.ConfigurationGroup) (model.ConfigurationGroup, error) {
 	return s.repo.Update(configGroup)
 }
 

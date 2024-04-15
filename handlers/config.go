@@ -65,12 +65,25 @@ func (c ConfigurationHandler) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.service.Add(cfg)
+	check, err := c.service.Get(cfg.Name, cfg.Version)
+	if err != nil && !strings.Contains(err.Error(), "not found") {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
+	if check.Id != 0 {
+		err := errors.New("config already exists")
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+
+	c.service.Add(cfg)
 	renderJSON(w, cfg)
+
 }
 
 // Post /configs/{name}/{version}
+// TODO pitati na vezbama, posto imamo auto inkrementaciju, u slucaju da neko menja recimo v1.2.0, ali postoji vec v1.2.1 kako to resiti
 func (c ConfigurationHandler) Update(w http.ResponseWriter, r *http.Request) {
 	contentType := r.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(contentType)
@@ -145,7 +158,7 @@ func renderJSON(w http.ResponseWriter, v interface{}) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/marshal")
+	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(marshal)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

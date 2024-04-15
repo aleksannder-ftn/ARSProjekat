@@ -9,6 +9,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"strings"
 )
 
 type ConfigurationGroupHandler struct {
@@ -59,13 +60,49 @@ func (cg ConfigurationGroupHandler) Add(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	cg.service.Add(*cfgGroup)
+	check, err := cg.service.Get(cfgGroup.Name, cfgGroup.Version)
+	if err != nil && !strings.Contains(err.Error(), "not found") {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
+	if check.Id != 0 {
+		err := errors.New("config already exists")
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+
+	cg.service.Add(*cfgGroup)
 	renderJSON(w, cfgGroup)
 }
 
 func (cg ConfigurationGroupHandler) Update(w http.ResponseWriter, r *http.Request) {
+	contentType := r.Header.Get("Content-Type")
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
+	if mediaType != "application/json" {
+		err := errors.New("expect application/json content-type")
+		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
+		return
+	}
+
+	cfg, err := decodeGroupBody(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	updatedCfg, err := cg.service.Update(*cfg)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	renderJSON(w, updatedCfg)
 }
 
 func (cg ConfigurationGroupHandler) Delete(w http.ResponseWriter, r *http.Request) {
