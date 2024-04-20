@@ -32,8 +32,7 @@ func (cg *ConfigurationGroup) SetConfigurations(configs []Configuration) {
 ce config group imati neke dodatne nacine za pretragu. To cemo prodiskutovati na discordu
 */
 type ConfigurationGroupRepository interface {
-	Add(configGroup ConfigurationGroup)
+	Add(configGroup *ConfigurationGroup) error
 	Get(name string, version Version) (ConfigurationGroup, error)
 	Delete(configGroup ConfigurationGroup) error
-	Update(configGroup ConfigurationGroup) (ConfigurationGroup, error)
 }

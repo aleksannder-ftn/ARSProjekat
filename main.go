@@ -24,7 +24,7 @@ func main() {
 
 	configGroupInMemoryRepository := repositories.NewConfigGroupInMemoryRepository()
 	configGroupService := services.NewConfigurationGroupService(configGroupInMemoryRepository)
-	configGroupHandler := handlers.NewConfigurationGroupHandler(configGroupService)
+	configGroupHandler := handlers.NewConfigurationGroupHandler(configGroupService, configService)
 
 	testvr := model.Version{
 		Major: 0,
@@ -79,19 +79,17 @@ func main() {
 	configInMemoryRepository.Add(testCfg2)
 	configInMemoryRepository.Add(testCfg3)
 
-	configGroupInMemoryRepository.Add(testGroup)
+	configGroupInMemoryRepository.Add(&testGroup)
 	router := mux.NewRouter()
 	// Config routes
 	router.HandleFunc("/configs/{name}/{version}", configHandler.Get).Methods("GET")
-	router.HandleFunc("/configs/", configHandler.Add).Methods("POST")
+	router.HandleFunc("/configs/", configHandler.Upsert).Methods("POST")
 	router.HandleFunc("/configs/{name}/{version}", configHandler.Delete).Methods("DELETE")
-	router.HandleFunc("/configs/{name}/{version}", configHandler.Update).Methods("POST")
 
 	// Config group routes
 	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.Get).Methods("GET")
-	router.HandleFunc("/configs/groups/", configGroupHandler.Add).Methods("POST")
+	router.HandleFunc("/configs/groups/", configGroupHandler.Upsert).Methods("POST")
 	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.Delete).Methods("DELETE")
-	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.Update).Methods("POST")
 	srv := &http.Server{
 		Addr:    "0.0.0.0:8000",
 		Handler: router,

@@ -45,7 +45,7 @@ func (c ConfigurationHandler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 // Post /configs/
-func (c ConfigurationHandler) Add(w http.ResponseWriter, r *http.Request) {
+func (c ConfigurationHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 	contentType := r.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
@@ -77,40 +77,13 @@ func (c ConfigurationHandler) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.service.Add(cfg)
-	renderJSON(w, cfg)
-
-}
-
-// Post /configs/{name}/{version}
-// TODO pitati na vezbama, posto imamo auto inkrementaciju, u slucaju da neko menja recimo v1.2.0, ali postoji vec v1.2.1 kako to resiti
-func (c ConfigurationHandler) Update(w http.ResponseWriter, r *http.Request) {
-	contentType := r.Header.Get("Content-Type")
-	mediaType, _, err := mime.ParseMediaType(contentType)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if mediaType != "application/json" {
-		err := errors.New("expect application/json Content-Type")
-		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
-		return
-	}
-
-	cfg, err := decodeBody(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	updatedCfg, err := c.service.Update(*cfg)
+	err = c.service.Add(cfg)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	renderJSON(w, cfg)
 
-	renderJSON(w, updatedCfg)
 }
 
 // Delete /configs/{name}/{version}

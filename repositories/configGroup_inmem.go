@@ -10,9 +10,17 @@ type ConfigGroupInMemoryRepository struct {
 	configGroups map[string]model.ConfigurationGroup
 }
 
-func (c ConfigGroupInMemoryRepository) Add(configGroup model.ConfigurationGroup) {
+func (c ConfigGroupInMemoryRepository) Add(configGroup *model.ConfigurationGroup) error {
+	if configGroup == nil {
+		return errors.New("cannot add nil configuration group")
+	}
 	key := fmt.Sprintf("%s/%#v", configGroup.Name, configGroup.Version)
-	c.configGroups[key] = configGroup
+	if _, exists := c.configGroups[key]; exists {
+		return errors.New("configuration group already exists")
+	}
+
+	c.configGroups[key] = *configGroup
+	return nil
 }
 
 func (c ConfigGroupInMemoryRepository) Get(name string, version model.Version) (model.ConfigurationGroup, error) {
@@ -32,17 +40,6 @@ func (c ConfigGroupInMemoryRepository) Delete(configGroup model.ConfigurationGro
 	}
 	delete(c.configGroups, key)
 	return nil
-}
-
-func (c ConfigGroupInMemoryRepository) Update(configGroup model.ConfigurationGroup) (model.ConfigurationGroup, error) {
-	key := fmt.Sprintf("%s/%#v", configGroup.Name, configGroup.Version)
-	_, ok := c.configGroups[key]
-	if !ok {
-		return model.ConfigurationGroup{}, errors.New("config not found")
-	}
-	configGroup.Version = model.IncrementVersion(configGroup.Version)
-	c.Add(configGroup)
-	return configGroup, nil
 }
 
 func NewConfigGroupInMemoryRepository() model.ConfigurationGroupRepository {
