@@ -10,9 +10,17 @@ type ConfigInMemoryRepository struct {
 	configs map[string]model.Configuration
 }
 
-func (c ConfigInMemoryRepository) Add(config *model.Configuration) {
+func (c ConfigInMemoryRepository) Add(config *model.Configuration) error {
+	if config == nil {
+		return errors.New("cannot add nil config")
+	}
+
 	key := fmt.Sprintf("%s/%#v", config.Name, config.Version)
+	if _, exists := c.configs[key]; exists {
+		return errors.New("config already exists")
+	}
 	c.configs[key] = *config
+	return nil
 }
 
 func (c ConfigInMemoryRepository) Get(name string, version model.Version) (model.Configuration, error) {
@@ -32,17 +40,6 @@ func (c ConfigInMemoryRepository) Delete(config model.Configuration) error {
 	}
 	delete(c.configs, key)
 	return nil
-}
-
-func (c ConfigInMemoryRepository) Update(config model.Configuration) (model.Configuration, error) {
-	key := fmt.Sprintf("%s/%#v", config.Name, config.Version)
-	_, ok := c.configs[key]
-	if !ok {
-		return model.Configuration{}, errors.New("config not found")
-	}
-	config.Version = model.IncrementVersion(config.Version)
-	c.Add(&config)
-	return config, nil
 }
 
 func NewConfigInMemoryRepository() model.ConfigurationRepository {

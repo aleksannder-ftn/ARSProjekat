@@ -13,11 +13,12 @@ import (
 )
 
 type ConfigurationGroupHandler struct {
-	service services.ConfigurationGroupService
+	groupService  services.ConfigurationGroupService
+	configService services.ConfigurationService
 }
 
-func NewConfigurationGroupHandler(service services.ConfigurationGroupService) ConfigurationGroupHandler {
-	return ConfigurationGroupHandler{service: service}
+func NewConfigurationGroupHandler(groupService services.ConfigurationGroupService, configService services.ConfigurationService) ConfigurationGroupHandler {
+	return ConfigurationGroupHandler{groupService: groupService, configService: configService}
 }
 
 func (cg ConfigurationGroupHandler) Get(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +30,7 @@ func (cg ConfigurationGroupHandler) Get(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	cGroup, err := cg.service.Get(name, versionModel)
+	cGroup, err := cg.groupService.Get(name, versionModel)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -39,7 +40,7 @@ func (cg ConfigurationGroupHandler) Get(w http.ResponseWriter, r *http.Request) 
 	renderJSON(w, cGroup)
 }
 
-func (cg ConfigurationGroupHandler) Add(w http.ResponseWriter, r *http.Request) {
+func (cg ConfigurationGroupHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 	cType := r.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(cType)
 
@@ -60,7 +61,25 @@ func (cg ConfigurationGroupHandler) Add(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	check, err := cg.service.Get(cfgGroup.Name, cfgGroup.Version)
+	for _, cfg := range cfgGroup.Configurations {
+		check, err := cg.configService.Get(cfg.Name, cfg.Version)
+		if err != nil && !strings.Contains(err.Error(), "not found") && !strings.Contains(err.Error(), "already exists") {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if check.Id != 0 {
+			continue
+		}
+
+		err = cg.configService.Add(&cfg)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	check, err := cg.groupService.Get(cfgGroup.Name, cfgGroup.Version)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -72,37 +91,13 @@ func (cg ConfigurationGroupHandler) Add(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	cg.service.Add(*cfgGroup)
-	renderJSON(w, cfgGroup)
-}
-
-func (cg ConfigurationGroupHandler) Update(w http.ResponseWriter, r *http.Request) {
-	contentType := r.Header.Get("Content-Type")
-	mediaType, _, err := mime.ParseMediaType(contentType)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if mediaType != "application/json" {
-		err := errors.New("expect application/json content-type")
-		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
-		return
-	}
-
-	cfg, err := decodeGroupBody(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	updatedCfg, err := cg.service.Update(*cfg)
+	err = cg.groupService.Add(*cfgGroup)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	renderJSON(w, updatedCfg)
+	renderJSON(w, cfgGroup)
 }
 
 func (cg ConfigurationGroupHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -114,13 +109,13 @@ func (cg ConfigurationGroupHandler) Delete(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	cGroup, err := cg.service.Get(name, versionModel)
+	cGroup, err := cg.groupService.Get(name, versionModel)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	ok := cg.service.Delete(cGroup)
+	ok := cg.groupService.Delete(cGroup)
 
 	if ok != nil {
 		http.Error(w, ok.Error(), http.StatusInternalServerError)
