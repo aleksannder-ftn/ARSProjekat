@@ -2,18 +2,20 @@ package main
 
 import (
 	"ars_projekat/handlers"
+	"ars_projekat/middleware"
 	"ars_projekat/model"
 	"ars_projekat/repositories"
 	"ars_projekat/services"
 	"context"
 	"errors"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -80,16 +82,19 @@ func main() {
 	configInMemoryRepository.Add(testCfg3)
 
 	configGroupInMemoryRepository.Add(&testGroup)
+
+	limiter := middleware.NewRateLimiter(time.Minute, 100)
+
 	router := mux.NewRouter()
 	// Config routes
-	router.HandleFunc("/configs/{name}/{version}", configHandler.Get).Methods("GET")
-	router.HandleFunc("/configs/", configHandler.Upsert).Methods("POST")
-	router.HandleFunc("/configs/{name}/{version}", configHandler.Delete).Methods("DELETE")
+	router.HandleFunc("/configs/{name}/{version}", limiter.Limit(configHandler.Get)).Methods("GET")
+	router.HandleFunc("/configs/", limiter.Limit(configHandler.Upsert)).Methods("POST")
+	router.HandleFunc("/configs/{name}/{version}", limiter.Limit(configHandler.Delete)).Methods("DELETE")
 
-	// Config group routes
-	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.Get).Methods("GET")
-	router.HandleFunc("/configs/groups/", configGroupHandler.Upsert).Methods("POST")
-	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.Delete).Methods("DELETE")
+	// Config group routes with rate limiter middleware
+	router.HandleFunc("/configs/groups/{name}/{version}", limiter.Limit(configGroupHandler.Get)).Methods("GET")
+	router.HandleFunc("/configs/groups/", limiter.Limit(configGroupHandler.Upsert)).Methods("POST")
+	router.HandleFunc("/configs/groups/{name}/{version}", limiter.Limit(configGroupHandler.Delete)).Methods("DELETE")
 	srv := &http.Server{
 		Addr:    "0.0.0.0:8000",
 		Handler: router,
