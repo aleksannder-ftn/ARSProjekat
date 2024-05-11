@@ -40,6 +40,59 @@ func (cg ConfigurationGroupHandler) Get(w http.ResponseWriter, r *http.Request) 
 	renderJSON(w, cGroup)
 }
 
+func (cg ConfigurationGroupHandler) AddConfig(w http.ResponseWriter, r *http.Request) {
+	name := mux.Vars(r)["name"]
+	version := mux.Vars(r)["version"]
+	versionModel, err := convertVersion(version)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	cGroup, err := cg.groupService.Get(name, versionModel)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	cType := r.Header.Get("Content-Type")
+	mediaType, _, err := mime.ParseMediaType(cType)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if mediaType != "application/json" {
+		err := errors.New("expect application/json Content-Type")
+		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
+		return
+	}
+
+	config, err := decodeBody(r.Body)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	for _, v := range cGroup.Configurations {
+		if v.Name == config.Name && v.Version == config.Version {
+			err := errors.New("config is already added")
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
+	}
+
+	cGroup.Configurations = append(cGroup.Configurations, *config)
+
+	err = cg.groupService.Save(&cGroup)
+
+	renderJSON(w, cGroup)
+}
+
 func (cg ConfigurationGroupHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 	cType := r.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(cType)

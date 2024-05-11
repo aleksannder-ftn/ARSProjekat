@@ -35,4 +35,5 @@ type ConfigurationGroupRepository interface {
 	Add(configGroup *ConfigurationGroup) error
 	Get(name string, version Version) (ConfigurationGroup, error)
 	Delete(configGroup ConfigurationGroup) error
+	Save(configGroup *ConfigurationGroup) error
 }

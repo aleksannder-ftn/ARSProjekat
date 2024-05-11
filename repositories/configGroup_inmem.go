@@ -42,6 +42,16 @@ func (c ConfigGroupInMemoryRepository) Delete(configGroup model.ConfigurationGro
 	return nil
 }
 
+func (c ConfigGroupInMemoryRepository) Save(configGroup *model.ConfigurationGroup) error {
+	if configGroup == nil {
+		return errors.New("cannot add nil configuration group")
+	}
+	key := fmt.Sprintf("%s/%#v", configGroup.Name, configGroup.Version)
+	c.configGroups[key] = *configGroup
+
+	return nil
+}
+
 func NewConfigGroupInMemoryRepository() model.ConfigurationGroupRepository {
 	return ConfigGroupInMemoryRepository{
 		configGroups: make(map[string]model.ConfigurationGroup),
