@@ -83,18 +83,23 @@ func main() {
 
 	configGroupInMemoryRepository.Add(&testGroup)
 
-	limiter := middleware.NewRateLimiter(time.Minute, 100)
+	limiter := middleware.NewRateLimiter(time.Minute, 3)
 
 	router := mux.NewRouter()
-	// Config routes
-	router.HandleFunc("/configs/{name}/{version}", limiter.Limit(configHandler.Get)).Methods("GET")
-	router.HandleFunc("/configs/", limiter.Limit(configHandler.Upsert)).Methods("POST")
-	router.HandleFunc("/configs/{name}/{version}", limiter.Limit(configHandler.Delete)).Methods("DELETE")
+	router.Use(func(next http.Handler) http.Handler {
+		return middleware.AdaptHandler(next, limiter)
+	})
 
-	// Config group routes with rate limiter middleware
-	router.HandleFunc("/configs/groups/{name}/{version}", limiter.Limit(configGroupHandler.Get)).Methods("GET")
-	router.HandleFunc("/configs/groups/", limiter.Limit(configGroupHandler.Upsert)).Methods("POST")
-	router.HandleFunc("/configs/groups/{name}/{version}", limiter.Limit(configGroupHandler.Delete)).Methods("DELETE")
+	// Config routes
+	router.HandleFunc("/configs/{name}/{version}", configHandler.Get).Methods("GET")
+	router.HandleFunc("/configs/", configHandler.Upsert).Methods("POST")
+	router.HandleFunc("/configs/{name}/{version}", configHandler.Delete).Methods("DELETE")
+
+	// Config group routes
+	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.Get).Methods("GET")
+	router.HandleFunc("/configs/groups/", configGroupHandler.Upsert).Methods("POST")
+	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.Delete).Methods("DELETE")
+
 	srv := &http.Server{
 		Addr:    "0.0.0.0:8000",
 		Handler: router,
@@ -104,12 +109,26 @@ func main() {
 
 	go func() {
 		log.Println("Starting server..")
+
 		if err := srv.ListenAndServe(); err != nil {
 			if !errors.Is(err, http.ErrServerClosed) {
 				log.Fatal(err)
 			}
 		}
 	}()
+
+	/* testing rate limiter
+	<-time.After(2 * time.Second)
+
+	fmt.Println("Starting rate limiter test...")
+	url := "http://0.0.0.0:8000/configs/TestKonfiguracija/0.0.1"
+	numRequests := 10
+	var wg sync.WaitGroup
+	wg.Add(numRequests)
+	for i := 0; i < numRequests; i++ {
+		go sendRequest(url, &wg)
+	}
+	wg.Wait() */
 
 	<-quit
 
@@ -124,3 +143,15 @@ func main() {
 
 	log.Println("Stopped server")
 }
+
+/* testing rate limiter
+func sendRequest(url string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	defer resp.Body.Close()
+	fmt.Println("Response Status:", resp.Status)
+} */

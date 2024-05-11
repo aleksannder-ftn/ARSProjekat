@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"fmt"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -23,7 +25,7 @@ func NewRateLimiter(interval time.Duration, limit int) *RateLimiter {
 
 func (rl *RateLimiter) Limit(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := r.RemoteAddr
+		ip := getIPAddress(r)
 
 		rl.mux.Lock()
 		defer rl.mux.Unlock()
@@ -40,6 +42,8 @@ func (rl *RateLimiter) Limit(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		fmt.Println("Counters map:", rl.counters)
+
 		rl.counters[ip] = count
 		time.AfterFunc(rl.interval, func() {
 			rl.mux.Lock()
@@ -49,4 +53,23 @@ func (rl *RateLimiter) Limit(next http.HandlerFunc) http.HandlerFunc {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func getIPAddress(r *http.Request) string {
+	fullAddr := r.RemoteAddr
+
+	ip, _, err := net.SplitHostPort(fullAddr)
+	if err != nil {
+		return fullAddr
+	}
+
+	return ip
+}
+
+func AdaptHandler(handler http.Handler, limiter *RateLimiter) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		limiter.Limit(func(w http.ResponseWriter, r *http.Request) {
+			handler.ServeHTTP(w, r)
+		}).ServeHTTP(w, r)
+	}
 }
