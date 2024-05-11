@@ -2,18 +2,20 @@ package main
 
 import (
 	"ars_projekat/handlers"
+	"ars_projekat/middleware"
 	"ars_projekat/model"
 	"ars_projekat/repositories"
 	"ars_projekat/services"
 	"context"
 	"errors"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -80,7 +82,14 @@ func main() {
 	configInMemoryRepository.Add(testCfg3)
 
 	configGroupInMemoryRepository.Add(&testGroup)
+
+	limiter := middleware.NewRateLimiter(time.Minute, 3)
+
 	router := mux.NewRouter()
+	router.Use(func(next http.Handler) http.Handler {
+		return middleware.AdaptHandler(next, limiter)
+	})
+
 	// Config routes
 	router.HandleFunc("/configs/{name}/{version}", configHandler.Get).Methods("GET")
 	router.HandleFunc("/configs/", configHandler.Upsert).Methods("POST")
@@ -91,6 +100,7 @@ func main() {
 	router.HandleFunc("/configs/groups/", configGroupHandler.Upsert).Methods("POST")
 	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.Delete).Methods("DELETE")
 	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.AddConfig).Methods("PUT")
+
 	srv := &http.Server{
 		Addr:    "0.0.0.0:8000",
 		Handler: router,
@@ -100,12 +110,26 @@ func main() {
 
 	go func() {
 		log.Println("Starting server..")
+
 		if err := srv.ListenAndServe(); err != nil {
 			if !errors.Is(err, http.ErrServerClosed) {
 				log.Fatal(err)
 			}
 		}
 	}()
+
+	/* testing rate limiter
+	<-time.After(2 * time.Second)
+
+	fmt.Println("Starting rate limiter test...")
+	url := "http://0.0.0.0:8000/configs/TestKonfiguracija/0.0.1"
+	numRequests := 10
+	var wg sync.WaitGroup
+	wg.Add(numRequests)
+	for i := 0; i < numRequests; i++ {
+		go sendRequest(url, &wg)
+	}
+	wg.Wait() */
 
 	<-quit
 
@@ -120,3 +144,15 @@ func main() {
 
 	log.Println("Stopped server")
 }
+
+/* testing rate limiter
+func sendRequest(url string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	defer resp.Body.Close()
+	fmt.Println("Response Status:", resp.Status)
+} */
