@@ -99,12 +99,8 @@ func main() {
 	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.Get).Methods("GET")
 	router.HandleFunc("/configs/groups/", configGroupHandler.Upsert).Methods("POST")
 	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.Delete).Methods("DELETE")
-
-	// Config group routes
-	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.Get).Methods("GET")
-	router.HandleFunc("/configs/groups/", configGroupHandler.Upsert).Methods("POST")
-	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.Delete).Methods("DELETE")
 	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.AddConfig).Methods("PUT")
+
 	srv := &http.Server{
 		Addr:    "0.0.0.0:8000",
 		Handler: router,
