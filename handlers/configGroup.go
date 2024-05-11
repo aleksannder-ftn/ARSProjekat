@@ -5,11 +5,12 @@ import (
 	"ars_projekat/services"
 	"encoding/json"
 	"errors"
-	"github.com/gorilla/mux"
 	"io"
 	"mime"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 type ConfigurationGroupHandler struct {
@@ -24,7 +25,7 @@ func NewConfigurationGroupHandler(groupService services.ConfigurationGroupServic
 func (cg ConfigurationGroupHandler) Get(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
-	versionModel, err := convertVersion(version)
+	versionModel, err := ConvertVersion(version)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -43,7 +44,7 @@ func (cg ConfigurationGroupHandler) Get(w http.ResponseWriter, r *http.Request) 
 func (cg ConfigurationGroupHandler) AddConfig(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
-	versionModel, err := convertVersion(version)
+	versionModel, err := ConvertVersion(version)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -156,7 +157,7 @@ func (cg ConfigurationGroupHandler) Upsert(w http.ResponseWriter, r *http.Reques
 func (cg ConfigurationGroupHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
-	versionModel, err := convertVersion(version)
+	versionModel, err := ConvertVersion(version)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

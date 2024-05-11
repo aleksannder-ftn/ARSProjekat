@@ -28,7 +28,7 @@ func NewConfigurationHandler(service services.ConfigurationService) Configuratio
 func (c ConfigurationHandler) Get(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
-	versionModel, err := convertVersion(version)
+	versionModel, err := ConvertVersion(version)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -90,7 +90,7 @@ func (c ConfigurationHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 func (c ConfigurationHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
-	versionModel, err := convertVersion(version)
+	versionModel, err := ConvertVersion(version)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -140,7 +140,7 @@ func renderJSON(w http.ResponseWriter, v interface{}) {
 
 }
 
-func convertVersion(version string) (model.Version, error) {
+func ConvertVersion(version string) (model.Version, error) {
 	split := strings.Split(version, ".")
 	if len(split) != 3 {
 		return model.Version{}, errors.New("version incorrect")
