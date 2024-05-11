@@ -22,6 +22,14 @@ func (s ConfigurationGroupService) Add(configGroup model.ConfigurationGroup) err
 	return nil
 }
 
+func (s ConfigurationGroupService) Save(configGroup *model.ConfigurationGroup) error {
+	err := s.repo.Save(configGroup)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s ConfigurationGroupService) Get(name string, version model.Version) (model.ConfigurationGroup, error) {
 	return s.repo.Get(name, version)
 }
