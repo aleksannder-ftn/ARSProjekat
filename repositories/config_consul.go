@@ -40,7 +40,7 @@ func (pr *ConfigRepository) GetAll() ([]model.Configuration, error) {
 		return nil, err
 	}
 
-	configurations := []model.Configuration{}
+	var configurations []model.Configuration
 	for _, pair := range data {
 		configuration := &model.Configuration{}
 		err = json.Unmarshal(pair.Value, configuration)

@@ -27,7 +27,9 @@ func NewConfigurationHandler(service services.ConfigurationService) Configuratio
 func (c ConfigurationHandler) Get(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
+
 	config, err := c.service.Get(name, version)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -128,4 +130,3 @@ func renderJSON(w http.ResponseWriter, v interface{}) {
 	}
 
 }
-
