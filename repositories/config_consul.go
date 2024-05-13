@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"log"
-	"os"
 
 	"github.com/hashicorp/consul/api"
 )
@@ -16,9 +16,10 @@ type ConfigRepository struct {
 	logger *log.Logger
 }
 
-func New(logger *log.Logger) (*ConfigRepository, error) {
-	db := os.Getenv("DB")
-	dbport := os.Getenv("DBPORT")
+// Config
+func New(logger *log.Logger, db string, dbport string) (*ConfigRepository, error) {
+	//db := os.Getenv("DB")
+	//dbport := os.Getenv("DBPORT")
 
 	config := api.DefaultConfig()
 	config.Address = fmt.Sprintf("%s:%s", db, dbport)

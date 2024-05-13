@@ -5,12 +5,11 @@ import (
 	"ars_projekat/services"
 	"encoding/json"
 	"errors"
+	"github.com/gorilla/mux"
 	"io"
 	"mime"
 	"net/http"
 	"strings"
-
-	"github.com/gorilla/mux"
 )
 
 type ConfigurationGroupHandler struct {
