@@ -2,38 +2,50 @@ package services
 
 import (
 	"ars_projekat/model"
+	"ars_projekat/repositories"
 )
 
 type ConfigurationGroupService struct {
-	repo model.ConfigurationGroupRepository
+	repo repositories.ConfigRepository
 }
 
-func NewConfigurationGroupService(repo model.ConfigurationGroupRepository) ConfigurationGroupService {
+func NewConfigurationGroupService(repo repositories.ConfigRepository) ConfigurationGroupService {
 	return ConfigurationGroupService{
 		repo: repo,
 	}
 }
 
 func (s ConfigurationGroupService) Add(configGroup model.ConfigurationGroup) error {
-	err := s.repo.Add(&configGroup)
-	if err != nil {
-		return err
+	name := configGroup.Name
+	version := model.ToString(configGroup.Version)
+	for _, v := range configGroup.Configurations {
+		labels := model.SortLabels(v.Labels)
+		err := s.repo.AddGroup(name, version, labels, v)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (s ConfigurationGroupService) Save(configGroup *model.ConfigurationGroup) error {
-	err := s.repo.Save(configGroup)
-	if err != nil {
-		return err
+
+	for _, v := range configGroup.Configurations {
+		labels := model.SortLabels(v.Labels)
+		err := s.repo.AddGroup(configGroup.Name, model.ToString(configGroup.Version), labels, v)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (s ConfigurationGroupService) Get(name string, version model.Version) (model.ConfigurationGroup, error) {
-	return s.repo.Get(name, version)
+func (s ConfigurationGroupService) Get(name string, version model.Version, labels string) (*model.ConfigurationGroup, error) {
+	return s.repo.GetGroupByParams(name, model.ToString(version), labels)
 }
 
 func (s ConfigurationGroupService) Delete(configGroup model.ConfigurationGroup) error {
-	return s.repo.Delete(configGroup)
+	name := configGroup.Name
+	ver := model.ToString(configGroup.Version)
+	return s.repo.DeleteGroupById(name, ver)
 }

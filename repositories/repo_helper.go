@@ -6,23 +6,21 @@ import (
 
 const (
 	configurations = "configs/%s/%s/"
-	all            = "configs"
-	groups         = "configs/groups/%s/%s"
+	allConfigs     = "configs"
+)
+
+var (
+	groups    = "groups/%s/%s/%v/%s"
+	allGroups = "groups"
 )
 
 func ConstructConfigKey(name string, version string) string {
 	return fmt.Sprintf(configurations, name, version)
 }
 
-func ConstructConfigGroupKey(name string, version string, labels []string) string {
-	key := fmt.Sprintf(groups, name, version)
-	for i, v := range labels {
-		if i == len(labels) {
-			key += v
-		} else {
-			key += v + ";"
-		}
+func ConstructConfigGroupKey(name string, version string, labels string, configName string) string {
+	if labels == "" {
+		return fmt.Sprintf("groups/%s/%s/%s", name, version, configName)
 	}
-
-	return fmt.Sprintf(key)
+	return fmt.Sprintf(groups, name, version, labels, configName)
 }

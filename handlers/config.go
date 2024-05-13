@@ -8,7 +8,6 @@ import (
 	"io"
 	"mime"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -24,18 +23,11 @@ func NewConfigurationHandler(service services.ConfigurationService) Configuratio
 	}
 }
 
-// Get  /configs/{name}/{version}
+// Get /configs/
 func (c ConfigurationHandler) Get(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
-	versionModel, err := ConvertVersion(version)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	config, err := c.service.Get(name, versionModel)
-
+	config, err := c.service.Get(name, version)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -44,7 +36,8 @@ func (c ConfigurationHandler) Get(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, config)
 }
 
-// Post /configs/
+// Post /configs/{name}/{version}
+
 func (c ConfigurationHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 	contentType := r.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(contentType)
@@ -65,7 +58,8 @@ func (c ConfigurationHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	check, err := c.service.Get(cfg.Name, cfg.Version)
+	ver := model.ToString(cfg.Version)
+	check, err := c.service.Get(cfg.Name, ver)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -90,19 +84,14 @@ func (c ConfigurationHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 func (c ConfigurationHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
-	versionModel, err := ConvertVersion(version)
+
+	config, err := c.service.Get(name, version)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	config, err := c.service.Get(name, versionModel)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	ok := c.service.Delete(config)
+	ok := c.service.Delete(*config)
 
 	if ok != nil {
 		http.Error(w, ok.Error(), http.StatusInternalServerError)
@@ -138,32 +127,4 @@ func renderJSON(w http.ResponseWriter, v interface{}) {
 		return
 	}
 
-}
-
-func ConvertVersion(version string) (model.Version, error) {
-	split := strings.Split(version, ".")
-	if len(split) != 3 {
-		return model.Version{}, errors.New("version incorrect")
-	}
-
-	major, err := strconv.Atoi(split[0])
-	if err != nil {
-		return model.Version{}, errors.New("failed converting")
-	}
-	minor, err := strconv.Atoi(split[1])
-	if err != nil {
-		return model.Version{}, errors.New("failed converting")
-	}
-	patch, err := strconv.Atoi(split[2])
-	if err != nil {
-		return model.Version{}, errors.New("failed converting")
-	}
-
-	versionModel := model.Version{
-		Major: major,
-		Minor: minor,
-		Patch: patch,
-	}
-
-	return versionModel, nil
 }

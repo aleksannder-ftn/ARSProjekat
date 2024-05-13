@@ -1,5 +1,10 @@
 package model
 
+import (
+	"fmt"
+	"sort"
+)
+
 // TODO add version as struct, add labels as field (used for filtering)
 type Configuration struct {
 	Name       string            `json:"name"`
@@ -35,6 +40,40 @@ func (c *Configuration) SetParameters(params map[string]string) {
 
 func (c *Configuration) SetLabels(labels map[string]string) {
 	c.Labels = labels
+}
+
+func SortLabels(labels map[string]string) string {
+	keys := make([]string, 0, len(labels))
+
+	for k := range labels {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	reorderedMap := make(map[string]string)
+
+	for _, k := range keys {
+		reorderedMap[k] = labels[k]
+	}
+
+	var slice []string
+	var counter int
+	for k, v := range reorderedMap {
+		if counter != len(reorderedMap)-1 {
+			counter++
+			slice = append(slice, fmt.Sprintf("%s:%s", k, v))
+			slice = append(slice, ";")
+		} else {
+			slice = append(slice, fmt.Sprintf("%s:%s", k, v))
+		}
+	}
+
+	var result string
+	for _, v := range slice {
+		result += v
+	}
+
+	return result
 }
 
 /* Ovo nisam hteo vise nista dodavati, msm da je dovoljno za pocetak, samo osnovan CRUD
