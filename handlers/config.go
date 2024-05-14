@@ -67,7 +67,7 @@ func (c ConfigurationHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if check.Id != 0 {
+	if check != nil {
 		err := errors.New("config already exists")
 		http.Error(w, err.Error(), http.StatusConflict)
 		return

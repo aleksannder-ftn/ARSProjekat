@@ -34,8 +34,8 @@ func New(logger *log.Logger) (*ConfigRepository, error) {
 	}, nil
 }
 
-func (pr *ConfigRepository) GetAll() ([]model.Configuration, error) {
-	kv := pr.cli.KV()
+func (cr *ConfigRepository) GetAll() ([]model.Configuration, error) {
+	kv := cr.cli.KV()
 	data, _, err := kv.List(allConfigs, nil)
 	if err != nil {
 		return nil, err

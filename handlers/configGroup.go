@@ -100,6 +100,10 @@ func (cg ConfigurationGroupHandler) AddConfig(w http.ResponseWriter, r *http.Req
 	cGroup.Configurations = append(cGroup.Configurations, *config)
 
 	err = cg.groupService.Save(cGroup)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	renderJSON(w, cGroup)
 }
@@ -140,8 +144,13 @@ func (cg ConfigurationGroupHandler) Delete(w http.ResponseWriter, r *http.Reques
 	labels := strings.Split(mux.Vars(r)["labels"], ";")
 
 	var labelString string
-	for _, v := range labels {
-		labelString += v
+	for i, v := range labels {
+		if i == len(labels)-1 {
+			labelString += v
+		} else {
+			labelString += v
+			labelString += ";"
+		}
 	}
 	versionModel, err := model.ToVersion(version)
 	if err != nil {
@@ -149,7 +158,11 @@ func (cg ConfigurationGroupHandler) Delete(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	_, err = cg.groupService.Get(name, *versionModel, labelString)
+	check, err := cg.groupService.Get(name, *versionModel, labelString)
+	if check == nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
