@@ -175,3 +175,4 @@ func decodeGroupBody(r io.Reader) (*model.ConfigurationGroup, error) {
 
 	return &cg, nil
 }
+

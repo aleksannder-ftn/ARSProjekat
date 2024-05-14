@@ -29,7 +29,6 @@ func (s ConfigurationGroupService) Add(configGroup model.ConfigurationGroup) err
 }
 
 func (s ConfigurationGroupService) Save(configGroup *model.ConfigurationGroup) error {
-
 	for _, v := range configGroup.Configurations {
 		labels := model.SortLabels(v.Labels)
 		err := s.repo.AddGroup(configGroup.Name, model.ToString(configGroup.Version), labels, v)
