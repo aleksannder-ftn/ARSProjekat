@@ -21,7 +21,7 @@ func main() {
 
 	logger := log.New(os.Stdout, "[config-api]", log.LstdFlags)
 
-	store, err := repositories.New(logger, "localhost", "8500")
+	store, err := repositories.New(logger)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -32,7 +32,7 @@ func main() {
 	configGroupService := services.NewConfigurationGroupService(*store)
 	configGroupHandler := handlers.NewConfigurationGroupHandler(configGroupService)
 
-	limiter := middleware.NewRateLimiter(time.Minute, 3)
+	limiter := middleware.NewRateLimiter(time.Second, 3)
 
 	router := mux.NewRouter()
 	router.Use(func(next http.Handler) http.Handler {
@@ -47,7 +47,7 @@ func main() {
 	// Config group routes
 	router.HandleFunc("/groups/{name}/{version}/{labels: ?.*}", configGroupHandler.Get).Methods("GET")
 	router.HandleFunc("/groups/", configGroupHandler.Upsert).Methods("POST")
-	router.HandleFunc("/groups/{name}/{version}/{labels}", configGroupHandler.Delete).Methods("DELETE")
+	router.HandleFunc("/groups/{name}/{version}/{labels: ?.*}", configGroupHandler.Delete).Methods("DELETE")
 	router.HandleFunc("/groups/{name}/{version}", configGroupHandler.AddConfig).Methods("PUT")
 
 	srv := &http.Server{
