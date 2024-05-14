@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - consul
+    environment:
+      - CONSUL_ADDRESS=consul:8500
+
+  consul:
+    image: consul:1.15.4
+    ports:
+      - "8500:8500"
+    command: "agent -dev -client=0.0.0.0"
+    volumes:
+      - consul-data:/consul/data
+
+volumes:
+  consul-data:
