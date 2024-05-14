@@ -21,7 +21,7 @@ func main() {
 
 	logger := log.New(os.Stdout, "[config-api]", log.LstdFlags)
 
-	store, err := repositories.New(logger, "localhost", "8500")
+	store, err := repositories.New(logger)
 	if err != nil {
 		logger.Fatal(err)
 	}

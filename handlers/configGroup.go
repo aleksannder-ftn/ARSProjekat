@@ -5,11 +5,12 @@ import (
 	"ars_projekat/services"
 	"encoding/json"
 	"errors"
-	"github.com/gorilla/mux"
 	"io"
 	"mime"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 type ConfigurationGroupHandler struct {
@@ -148,13 +149,13 @@ func (cg ConfigurationGroupHandler) Delete(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	cGroup, err := cg.groupService.Get(name, *versionModel, labelString)
+	_, err = cg.groupService.Get(name, *versionModel, labelString)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	ok := cg.groupService.Delete(*cGroup)
+	ok := cg.groupService.Delete(name, version, labelString)
 
 	if ok != nil {
 		http.Error(w, ok.Error(), http.StatusInternalServerError)
