@@ -134,6 +134,9 @@ func (cr *ConfigRepository) GetGroupByParams(name string, version string, labels
 	}
 
 	data, _, err := kv.List(key, nil)
+	if data == nil {
+		return nil, err
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -62,7 +62,11 @@ func (cg ConfigurationGroupHandler) AddConfig(w http.ResponseWriter, r *http.Req
 	}
 
 	cGroup, err := cg.groupService.Get(name, *versionModel, "")
-
+	if cGroup == nil {
+		err = errors.New("config not found")
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -160,6 +164,7 @@ func (cg ConfigurationGroupHandler) Delete(w http.ResponseWriter, r *http.Reques
 
 	check, err := cg.groupService.Get(name, *versionModel, labelString)
 	if check == nil {
+		err = errors.New("config not found")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
