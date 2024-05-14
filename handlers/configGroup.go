@@ -13,24 +13,34 @@ import (
 )
 
 type ConfigurationGroupHandler struct {
-	groupService  services.ConfigurationGroupService
-	configService services.ConfigurationService
+	groupService services.ConfigurationGroupService
 }
 
-func NewConfigurationGroupHandler(groupService services.ConfigurationGroupService, configService services.ConfigurationService) ConfigurationGroupHandler {
-	return ConfigurationGroupHandler{groupService: groupService, configService: configService}
+func NewConfigurationGroupHandler(groupService services.ConfigurationGroupService) ConfigurationGroupHandler {
+	return ConfigurationGroupHandler{groupService: groupService}
 }
 
 func (cg ConfigurationGroupHandler) Get(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
-	versionModel, err := convertVersion(version)
+	labels := strings.Split(mux.Vars(r)["labels"], ";")
+
+	var labelString string
+	for i, v := range labels {
+		if i == len(labels)-1 {
+			labelString += v
+		} else {
+			labelString += v
+			labelString += ";"
+		}
+	}
+	versionModel, err := model.ToVersion(version)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	cGroup, err := cg.groupService.Get(name, versionModel)
+	cGroup, err := cg.groupService.Get(name, *versionModel, labelString)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -43,14 +53,14 @@ func (cg ConfigurationGroupHandler) Get(w http.ResponseWriter, r *http.Request) 
 func (cg ConfigurationGroupHandler) AddConfig(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
-	versionModel, err := convertVersion(version)
+	versionModel, err := model.ToVersion(version)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	cGroup, err := cg.groupService.Get(name, versionModel)
+	cGroup, err := cg.groupService.Get(name, *versionModel, "")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -88,7 +98,7 @@ func (cg ConfigurationGroupHandler) AddConfig(w http.ResponseWriter, r *http.Req
 
 	cGroup.Configurations = append(cGroup.Configurations, *config)
 
-	err = cg.groupService.Save(&cGroup)
+	err = cg.groupService.Save(cGroup)
 
 	renderJSON(w, cGroup)
 }
@@ -114,36 +124,6 @@ func (cg ConfigurationGroupHandler) Upsert(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	for _, cfg := range cfgGroup.Configurations {
-		check, err := cg.configService.Get(cfg.Name, cfg.Version)
-		if err != nil && !strings.Contains(err.Error(), "not found") && !strings.Contains(err.Error(), "already exists") {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if check.Id != 0 {
-			continue
-		}
-
-		err = cg.configService.Add(&cfg)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-
-	check, err := cg.groupService.Get(cfgGroup.Name, cfgGroup.Version)
-	if err != nil && !strings.Contains(err.Error(), "not found") {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if check.Id != 0 {
-		err := errors.New("config already exists")
-		http.Error(w, err.Error(), http.StatusConflict)
-		return
-	}
-
 	err = cg.groupService.Add(*cfgGroup)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -156,19 +136,25 @@ func (cg ConfigurationGroupHandler) Upsert(w http.ResponseWriter, r *http.Reques
 func (cg ConfigurationGroupHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
-	versionModel, err := convertVersion(version)
+	labels := strings.Split(mux.Vars(r)["labels"], ";")
+
+	var labelString string
+	for _, v := range labels {
+		labelString += v
+	}
+	versionModel, err := model.ToVersion(version)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	cGroup, err := cg.groupService.Get(name, versionModel)
+	cGroup, err := cg.groupService.Get(name, *versionModel, labelString)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	ok := cg.groupService.Delete(cGroup)
+	ok := cg.groupService.Delete(*cGroup)
 
 	if ok != nil {
 		http.Error(w, ok.Error(), http.StatusInternalServerError)
@@ -189,3 +175,4 @@ func decodeGroupBody(r io.Reader) (*model.ConfigurationGroup, error) {
 
 	return &cg, nil
 }
+

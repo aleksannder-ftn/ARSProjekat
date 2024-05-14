@@ -3,7 +3,6 @@ package main
 import (
 	"ars_projekat/handlers"
 	"ars_projekat/middleware"
-	"ars_projekat/model"
 	"ars_projekat/repositories"
 	"ars_projekat/services"
 	"context"
@@ -20,68 +19,18 @@ import (
 
 func main() {
 
-	configInMemoryRepository := repositories.NewConfigInMemoryRepository()
-	configService := services.NewConfigurationService(configInMemoryRepository)
+	logger := log.New(os.Stdout, "[config-api]", log.LstdFlags)
+
+	store, err := repositories.New(logger, "localhost", "8500")
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	configService := services.NewConfigurationService(*store)
 	configHandler := handlers.NewConfigurationHandler(configService)
 
-	configGroupInMemoryRepository := repositories.NewConfigGroupInMemoryRepository()
-	configGroupService := services.NewConfigurationGroupService(configGroupInMemoryRepository)
-	configGroupHandler := handlers.NewConfigurationGroupHandler(configGroupService, configService)
-
-	testvr := model.Version{
-		Major: 0,
-		Minor: 0,
-		Patch: 1,
-	}
-
-	testCfg1 := &model.Configuration{
-		Name:       "TestKonfiguracija",
-		Id:         203032,
-		Version:    testvr,
-		Parameters: make(map[string]string),
-		Labels:     make(map[string]string),
-	}
-
-	testCfg2 := &model.Configuration{
-		Name:       "TestKonfiguracija2",
-		Id:         2030201323,
-		Version:    testvr,
-		Parameters: make(map[string]string),
-		Labels:     make(map[string]string),
-	}
-
-	testCfg3 := &model.Configuration{
-		Name: "TestKonfiguracija3",
-		Id:   232312678,
-		Version: model.Version{
-			Major: 2,
-			Minor: 0,
-			Patch: 6,
-		},
-		Parameters: make(map[string]string),
-		Labels:     make(map[string]string),
-	}
-
-	var group []model.Configuration
-	group = append(group, *testCfg1)
-	group = append(group, *testCfg2)
-	group = append(group, *testCfg3)
-
-	testGroup := model.ConfigurationGroup{
-		Name: "TestGrupa",
-		Id:   66564054,
-		Version: model.Version{
-			Major: 0,
-			Minor: 0,
-			Patch: 2,
-		},
-		Configurations: group,
-	}
-	configInMemoryRepository.Add(testCfg1)
-	configInMemoryRepository.Add(testCfg2)
-	configInMemoryRepository.Add(testCfg3)
-
-	configGroupInMemoryRepository.Add(&testGroup)
+	configGroupService := services.NewConfigurationGroupService(*store)
+	configGroupHandler := handlers.NewConfigurationGroupHandler(configGroupService)
 
 	limiter := middleware.NewRateLimiter(time.Minute, 3)
 
@@ -96,10 +45,10 @@ func main() {
 	router.HandleFunc("/configs/{name}/{version}", configHandler.Delete).Methods("DELETE")
 
 	// Config group routes
-	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.Get).Methods("GET")
-	router.HandleFunc("/configs/groups/", configGroupHandler.Upsert).Methods("POST")
-	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.Delete).Methods("DELETE")
-	router.HandleFunc("/configs/groups/{name}/{version}", configGroupHandler.AddConfig).Methods("PUT")
+	router.HandleFunc("/groups/{name}/{version}/{labels: ?.*}", configGroupHandler.Get).Methods("GET")
+	router.HandleFunc("/groups/", configGroupHandler.Upsert).Methods("POST")
+	router.HandleFunc("/groups/{name}/{version}/{labels}", configGroupHandler.Delete).Methods("DELETE")
+	router.HandleFunc("/groups/{name}/{version}", configGroupHandler.AddConfig).Methods("PUT")
 
 	srv := &http.Server{
 		Addr:    "0.0.0.0:8000",

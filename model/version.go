@@ -1,5 +1,11 @@
 package model
 
+import (
+	"errors"
+	"strconv"
+	"strings"
+)
+
 type Version struct {
 	Major int `json:"major"`
 	Minor int `json:"minor"`
@@ -18,22 +24,36 @@ func (v *Version) SetPatch(patch int) {
 	v.Patch = patch
 }
 
-func IncrementVersion(current Version) Version {
-	newVersion := current
+func ToString(ver Version) string {
+	return strconv.Itoa(ver.Major) + "." + strconv.Itoa(ver.Minor) + "." + strconv.Itoa(ver.Patch)
+}
 
-	newVersion.Patch++
-
-	if newVersion.Patch > 9 {
-		newVersion.Patch = 0
-		newVersion.Minor++
-
-		if newVersion.Minor > 9 {
-			newVersion.Minor = 0
-			newVersion.Major++
-		}
+func ToVersion(version string) (*Version, error) {
+	split := strings.Split(version, ".")
+	if len(split) != 3 {
+		return &Version{}, errors.New("version incorrect")
 	}
 
-	return newVersion
+	major, err := strconv.Atoi(split[0])
+	if err != nil {
+		return nil, errors.New("failed converting")
+	}
+	minor, err := strconv.Atoi(split[1])
+	if err != nil {
+		return nil, errors.New("failed converting")
+	}
+	patch, err := strconv.Atoi(split[2])
+	if err != nil {
+		return nil, errors.New("failed converting")
+	}
+
+	versionModel := Version{
+		Major: major,
+		Minor: minor,
+		Patch: patch,
+	}
+
+	return &versionModel, nil
 }
 
 type VersionRepository interface {
