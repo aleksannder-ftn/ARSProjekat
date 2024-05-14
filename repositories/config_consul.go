@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	"log"
+	"os"
 
 	"github.com/hashicorp/consul/api"
 )
@@ -17,9 +17,9 @@ type ConfigRepository struct {
 }
 
 // Config
-func New(logger *log.Logger, db string, dbport string) (*ConfigRepository, error) {
-	//db := os.Getenv("DB")
-	//dbport := os.Getenv("DBPORT")
+func New(logger *log.Logger) (*ConfigRepository, error) {
+	db := os.Getenv("DB")
+	dbport := os.Getenv("DBPORT")
 
 	config := api.DefaultConfig()
 	config.Address = fmt.Sprintf("%s:%s", db, dbport)
@@ -185,7 +185,7 @@ func (cr *ConfigRepository) DeleteGroupById(name string, version string) error {
 	return nil
 }
 
-func (cr *ConfigRepository) DeleteGroupByParams(name string, version string, labels string, configs model.Configuration) error {
+func (cr *ConfigRepository) DeleteGroupByParams(name string, version string, labels string) error {
 	kv := cr.cli.KV()
 
 	var key string

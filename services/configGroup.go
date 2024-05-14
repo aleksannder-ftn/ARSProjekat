@@ -43,8 +43,6 @@ func (s ConfigurationGroupService) Get(name string, version model.Version, label
 	return s.repo.GetGroupByParams(name, model.ToString(version), labels)
 }
 
-func (s ConfigurationGroupService) Delete(configGroup model.ConfigurationGroup) error {
-	name := configGroup.Name
-	ver := model.ToString(configGroup.Version)
-	return s.repo.DeleteGroupById(name, ver)
+func (s ConfigurationGroupService) Delete(name string, version string, labels string) error {
+	return s.repo.DeleteGroupByParams(name, version, labels)
 }

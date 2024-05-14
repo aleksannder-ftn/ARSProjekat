@@ -8,7 +8,8 @@ services:
     depends_on:
       - consul
     environment:
-      - CONSUL_ADDRESS=consul:8500
+      - DB=consul
+      - DBPORT=8500
 
   consul:
     image: consul:1.15.4
