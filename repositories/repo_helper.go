@@ -14,6 +14,10 @@ var (
 	allGroups = "groups"
 )
 
+const (
+	idempotencyRequests = "idempotency_requests/%s/"
+)
+
 func ConstructConfigKey(name string, version string) string {
 	return fmt.Sprintf(configurations, name, version)
 }
@@ -23,4 +27,8 @@ func ConstructConfigGroupKey(name string, version string, labels string, configN
 		return fmt.Sprintf("groups/%s/%s/%s", name, version, configName)
 	}
 	return fmt.Sprintf(groups, name, version, labels, configName)
+}
+
+func ConstructIdempotencyRequestKey(key string) string {
+	return fmt.Sprintf(idempotencyRequests, key)
 }

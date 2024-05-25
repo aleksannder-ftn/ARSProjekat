@@ -204,3 +204,34 @@ func (cr *ConfigRepository) DeleteGroupByParams(name string, version string, lab
 
 	return nil
 }
+
+func (cr *ConfigRepository) GetIdempotencyRequestByKey(key string) (bool, error) {
+	kv := cr.cli.KV()
+
+	data, _, err := kv.Get(ConstructIdempotencyRequestKey(key), nil)
+	if err != nil {
+		return false, err
+	}
+	if data == nil {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (cr *ConfigRepository) AddIdempotencyRequest(req *model.IdempotencyRequest) (*model.IdempotencyRequest, error) {
+	kv := cr.cli.KV()
+
+	data, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	keyValue := &api.KVPair{Key: ConstructIdempotencyRequestKey(req.Key), Value: data}
+	_, err = kv.Put(keyValue, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
