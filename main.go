@@ -32,11 +32,17 @@ func main() {
 	configGroupService := services.NewConfigurationGroupService(*store)
 	configGroupHandler := handlers.NewConfigurationGroupHandler(configGroupService)
 
+	idempotencyService := services.NewIdempotencyService(*store)
+
 	limiter := middleware.NewRateLimiter(time.Second, 3)
+	idempotencyMiddleware := middleware.NewIdempotency(&idempotencyService)
 
 	router := mux.NewRouter()
 	router.Use(func(next http.Handler) http.Handler {
 		return middleware.AdaptHandler(next, limiter)
+	})
+	router.Use(func(next http.Handler) http.Handler {
+		return middleware.AdaptIdempotencyHandler(next, idempotencyMiddleware)
 	})
 
 	// Config routes
