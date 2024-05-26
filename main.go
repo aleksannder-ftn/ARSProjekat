@@ -71,7 +71,7 @@ func main() {
 
 	// Serve the swagger.yaml file
 	router.HandleFunc("/swagger.yaml", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "swagger.yaml")
+		http.ServeFile(w, r, "./swagger.yaml")
 	}).Methods("GET")
 
 	// SwaggerUI
