@@ -19,5 +19,13 @@ services:
     volumes:
       - consul-data:/consul/data
 
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+
 volumes:
   consul-data:

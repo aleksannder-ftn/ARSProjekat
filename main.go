@@ -74,6 +74,9 @@ func main() {
 		http.ServeFile(w, r, "./swagger.yaml")
 	}).Methods("GET")
 
+	// Metrics exposer
+	router.Path("/metrics").Handler(metricsHandler())
+
 	// SwaggerUI
 	optionsDevelopers := swaggerMiddleware.SwaggerUIOpts{SpecURL: "swagger.yaml"}
 	developerDocumentationHandler := swaggerMiddleware.SwaggerUI(optionsDevelopers, nil)
