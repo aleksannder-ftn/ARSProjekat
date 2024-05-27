@@ -1,6 +1,8 @@
 package model
 
 // ConfigurationGroup TODO implement version as struct
+
+// swagger:model ConfigurationGroup
 type ConfigurationGroup struct {
 	Name           string          `json:"name"`
 	Id             int64           `json:"id"`

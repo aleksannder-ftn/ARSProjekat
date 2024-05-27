@@ -6,6 +6,8 @@ import (
 )
 
 // TODO add version as struct, add labels as field (used for filtering)
+
+// swagger:model Configuration
 type Configuration struct {
 	Name       string            `json:"name"`
 	Id         int64             `json:"id"`

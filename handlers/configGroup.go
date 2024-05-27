@@ -21,6 +21,13 @@ func NewConfigurationGroupHandler(groupService services.ConfigurationGroupServic
 	return ConfigurationGroupHandler{groupService: groupService}
 }
 
+// swagger:route GET /config-groups/{name}/{version}/{labels} configurationgroup getConfigurationGroup
+// Get configuration group by name, version, and labels
+//
+// responses:
+//
+//	404: ErrorResponse
+//	200: ConfigurationGroup
 func (cg ConfigurationGroupHandler) Get(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
@@ -42,7 +49,6 @@ func (cg ConfigurationGroupHandler) Get(w http.ResponseWriter, r *http.Request) 
 	}
 
 	cGroup, err := cg.groupService.Get(name, *versionModel, labelString)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -51,11 +57,19 @@ func (cg ConfigurationGroupHandler) Get(w http.ResponseWriter, r *http.Request) 
 	renderJSON(w, cGroup)
 }
 
+// swagger:route POST /config-groups/{name}/{version} configurationgroup addConfigurationToGroup
+// Add configuration to a configuration group
+//
+// responses:
+//
+//	415: ErrorResponse
+//	400: ErrorResponse
+//	409: ErrorResponse
+//	201: ConfigurationGroup
 func (cg ConfigurationGroupHandler) AddConfig(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
 	versionModel, err := model.ToVersion(version)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -74,7 +88,6 @@ func (cg ConfigurationGroupHandler) AddConfig(w http.ResponseWriter, r *http.Req
 
 	cType := r.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(cType)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -87,7 +100,6 @@ func (cg ConfigurationGroupHandler) AddConfig(w http.ResponseWriter, r *http.Req
 	}
 
 	config, err := decodeBody(r.Body)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -102,7 +114,6 @@ func (cg ConfigurationGroupHandler) AddConfig(w http.ResponseWriter, r *http.Req
 	}
 
 	cGroup.Configurations = append(cGroup.Configurations, *config)
-
 	err = cg.groupService.Save(cGroup)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -112,10 +123,17 @@ func (cg ConfigurationGroupHandler) AddConfig(w http.ResponseWriter, r *http.Req
 	renderJSON(w, cGroup)
 }
 
+// swagger:route POST /config-groups configurationgroup upsertConfigurationGroup
+// Add or update a configuration group
+//
+// responses:
+//
+//	415: ErrorResponse
+//	400: ErrorResponse
+//	201: ConfigurationGroup
 func (cg ConfigurationGroupHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 	cType := r.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(cType)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -142,6 +160,13 @@ func (cg ConfigurationGroupHandler) Upsert(w http.ResponseWriter, r *http.Reques
 	renderJSON(w, cfgGroup)
 }
 
+// swagger:route DELETE /config-groups/{name}/{version}/{labels} configurationgroup deleteConfigurationGroup
+// Delete a configuration group by name, version, and labels
+//
+// responses:
+//
+//	404: ErrorResponse
+//	204: NoContent
 func (cg ConfigurationGroupHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
@@ -174,13 +199,12 @@ func (cg ConfigurationGroupHandler) Delete(w http.ResponseWriter, r *http.Reques
 	}
 
 	ok := cg.groupService.Delete(name, version, labelString)
-
 	if ok != nil {
 		http.Error(w, ok.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	renderJSON(w, "successfully deleted")
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func decodeGroupBody(r io.Reader) (*model.ConfigurationGroup, error) {

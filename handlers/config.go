@@ -23,13 +23,18 @@ func NewConfigurationHandler(service services.ConfigurationService) Configuratio
 	}
 }
 
-// Get /configs/
+// swagger:route GET /configs/{name}/{version} configuration getConfiguration
+// Get configuration by name and version
+//
+// responses:
+//
+//	404: ErrorResponse
+//	200: Configuration
 func (c ConfigurationHandler) Get(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
 
 	config, err := c.service.Get(name, version)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -38,8 +43,15 @@ func (c ConfigurationHandler) Get(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, config)
 }
 
-// Post /configs/{name}/{version}
-
+// swagger:route POST /configs configuration upsertConfiguration
+// Add or update a configuration
+//
+// responses:
+//
+//	415: ErrorResponse
+//	400: ErrorResponse
+//	409: ErrorResponse
+//	201: Configuration
 func (c ConfigurationHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 	contentType := r.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(contentType)
@@ -79,10 +91,15 @@ func (c ConfigurationHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	renderJSON(w, cfg)
-
 }
 
-// Delete /configs/{name}/{version}
+// swagger:route DELETE /configs/{name}/{version} configuration deleteConfiguration
+// Delete a configuration by name and version
+//
+// responses:
+//
+//	404: ErrorResponse
+//	204: NoContent
 func (c ConfigurationHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
@@ -94,13 +111,12 @@ func (c ConfigurationHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ok := c.service.Delete(*config)
-
 	if ok != nil {
 		http.Error(w, ok.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	renderJSON(w, "successfully deleted")
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func decodeBody(r io.Reader) (*model.Configuration, error) {
@@ -116,7 +132,6 @@ func decodeBody(r io.Reader) (*model.Configuration, error) {
 
 func renderJSON(w http.ResponseWriter, v interface{}) {
 	marshal, err := json.Marshal(v)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -124,9 +139,9 @@ func renderJSON(w http.ResponseWriter, v interface{}) {
 
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(marshal)
+	w.WriteHeader(http.StatusCreated)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 }

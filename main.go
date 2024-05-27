@@ -1,3 +1,15 @@
+// Post API
+//
+//	Title: ARS Projekat API
+//
+//	Schemes: http
+//	Version: 0.0.1
+//	BasePath: /
+//
+//	Produces:
+//	  - application/json
+//
+// swagger:meta
 package main
 
 import (
@@ -14,6 +26,7 @@ import (
 	"syscall"
 	"time"
 
+	swaggerMiddleware "github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
 )
 
@@ -55,6 +68,16 @@ func main() {
 	router.HandleFunc("/groups/", configGroupHandler.Upsert).Methods("POST")
 	router.HandleFunc("/groups/{name}/{version}/{labels: ?.*}", configGroupHandler.Delete).Methods("DELETE")
 	router.HandleFunc("/groups/{name}/{version}", configGroupHandler.AddConfig).Methods("PUT")
+
+	// Serve the swagger.yaml file
+	router.HandleFunc("/swagger.yaml", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./swagger.yaml")
+	}).Methods("GET")
+
+	// SwaggerUI
+	optionsDevelopers := swaggerMiddleware.SwaggerUIOpts{SpecURL: "swagger.yaml"}
+	developerDocumentationHandler := swaggerMiddleware.SwaggerUI(optionsDevelopers, nil)
+	router.Handle("/docs", developerDocumentationHandler)
 
 	srv := &http.Server{
 		Addr:    "0.0.0.0:8000",

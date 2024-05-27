@@ -10,5 +10,6 @@ RUN go build -o app .
 FROM alpine:latest
 WORKDIR /app
 COPY --from=build /app/app .
+COPY swagger.yaml /app/swagger.yaml
 EXPOSE 8000
 CMD ["./app"]
