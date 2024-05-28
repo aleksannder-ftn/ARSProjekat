@@ -46,9 +46,12 @@ func main() {
 	configGroupHandler := handlers.NewConfigurationGroupHandler(configGroupService)
 
 	idempotencyService := services.NewIdempotencyService(*store)
+	idempotencyMiddleware := middleware.NewIdempotency(&idempotencyService)
+
+	metricsService := services.NewMetricsService()
+	metricsMiddleware := middleware.NewMetrics(metricsService)
 
 	limiter := middleware.NewRateLimiter(time.Second, 3)
-	idempotencyMiddleware := middleware.NewIdempotency(&idempotencyService)
 
 	router := mux.NewRouter()
 	router.Use(func(next http.Handler) http.Handler {
@@ -56,6 +59,9 @@ func main() {
 	})
 	router.Use(func(next http.Handler) http.Handler {
 		return middleware.AdaptIdempotencyHandler(next, idempotencyMiddleware)
+	})
+	router.Use(func(next http.Handler) http.Handler {
+		return middleware.AdaptPrometheusHandler(next, metricsMiddleware)
 	})
 
 	// Config routes
@@ -73,6 +79,9 @@ func main() {
 	router.HandleFunc("/swagger.yaml", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./swagger.yaml")
 	}).Methods("GET")
+
+	// Metrics exposer
+	router.Handle("/metrics", metricsMiddleware.MetricsHandler()).Methods("GET")
 
 	// SwaggerUI
 	optionsDevelopers := swaggerMiddleware.SwaggerUIOpts{SpecURL: "swagger.yaml"}
@@ -96,19 +105,6 @@ func main() {
 		}
 	}()
 
-	/* testing rate limiter
-	<-time.After(2 * time.Second)
-
-	fmt.Println("Starting rate limiter test...")
-	url := "http://0.0.0.0:8000/configs/TestKonfiguracija/0.0.1"
-	numRequests := 10
-	var wg sync.WaitGroup
-	wg.Add(numRequests)
-	for i := 0; i < numRequests; i++ {
-		go sendRequest(url, &wg)
-	}
-	wg.Wait() */
-
 	<-quit
 
 	log.Println("Shutting down")
@@ -122,15 +118,3 @@ func main() {
 
 	log.Println("Stopped server")
 }
-
-/* testing rate limiter
-func sendRequest(url string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	resp, err := http.Get(url)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-	defer resp.Body.Close()
-	fmt.Println("Response Status:", resp.Status)
-} */
