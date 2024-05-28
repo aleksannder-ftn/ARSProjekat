@@ -29,3 +29,4 @@ services:
 
 volumes:
   consul-data:
+  prometheus-data:

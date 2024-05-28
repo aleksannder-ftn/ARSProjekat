@@ -1,34 +1,64 @@
 package middleware
 
 import (
-	"ars_projekat/model"
+	"log"
 	"net/http"
 	"time"
 
+	"ars_projekat/services"
+
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func count(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+type Metrics struct {
+	service *services.MetricsService
+}
+
+func NewMetrics(service *services.MetricsService) *Metrics {
+	return &Metrics{service}
+}
+
+type ResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (r *ResponseWriter) WriteHeader(status int) {
+	r.statusCode = status
+	r.ResponseWriter.WriteHeader(status)
+}
+
+func (m *Metrics) Count(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Scrapping...")
 		start := time.Now()
 
 		route := mux.CurrentRoute(r)
 		path, _ := route.GetPathTemplate()
 
-		rw := &model.ResponseWriter{w, http.StatusOK}
-		f(rw, r)
+		rw := &ResponseWriter{w, http.StatusOK}
+		next.ServeHTTP(rw, r)
 
 		duration := time.Since(start).Seconds()
 
 		statusCode := rw.statusCode
 		if statusCode >= 200 && statusCode < 400 {
-			httpSuccessfulRequests.WithLabelValues().Inc()
+			m.service.HttpSuccessfulRequests.WithLabelValues().Inc()
 		} else if statusCode >= 400 && statusCode < 600 {
-			httpUnsuccessfulRequests.WithLabelValues().Inc()
+			m.service.HttpUnsuccessfulRequests.WithLabelValues().Inc()
 		}
 
-		httpRequestDuration.WithLabelValues(r.Method, path).Observe(duration)
-		httpTotalRequests.WithLabelValues().Inc()
+		m.service.HttpTotalRequests.WithLabelValues().Inc()
+		m.service.AverageRequestDuration.WithLabelValues(r.Method, path).Set(duration)
+		m.service.RequestsPerTimeUnit.WithLabelValues(r.Method, path, "seconds").Inc()
+	})
+}
 
-	}
+func (m *Metrics) MetricsHandler() http.Handler {
+	return promhttp.HandlerFor(m.service.Registry, promhttp.HandlerOpts{})
+}
+
+func AdaptPrometheusHandler(handler http.Handler, metrics *Metrics) http.Handler {
+	return metrics.Count(handler)
 }
