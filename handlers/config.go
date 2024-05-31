@@ -3,6 +3,7 @@ package handlers
 import (
 	"ars_projekat/model"
 	"ars_projekat/services"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -11,15 +12,19 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ConfigurationHandler struct {
-	service services.ConfigurationService
+	Tracer  trace.Tracer
+	Service services.ConfigurationService
 }
 
-func NewConfigurationHandler(service services.ConfigurationService) ConfigurationHandler {
+func NewConfigurationHandler(service services.ConfigurationService, tracer trace.Tracer) ConfigurationHandler {
 	return ConfigurationHandler{
-		service: service,
+		Service: service,
+		Tracer:  tracer,
 	}
 }
 
@@ -31,16 +36,21 @@ func NewConfigurationHandler(service services.ConfigurationService) Configuratio
 //	404: ErrorResponse
 //	200: Configuration
 func (c ConfigurationHandler) Get(w http.ResponseWriter, r *http.Request) {
+	ctx, span := c.Tracer.Start(r.Context(), "ConfigurationHandler.Get")
+	defer span.End()
+
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
 
-	config, err := c.service.Get(name, version)
+	config, err := c.Service.Get(name, version)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	renderJSON(w, config)
+	renderJSON(ctx, w, config)
+	span.SetStatus(codes.Ok, "")
 }
 
 // swagger:route POST /configs configuration upsertConfiguration
@@ -53,44 +63,54 @@ func (c ConfigurationHandler) Get(w http.ResponseWriter, r *http.Request) {
 //	409: ErrorResponse
 //	201: Configuration
 func (c ConfigurationHandler) Upsert(w http.ResponseWriter, r *http.Request) {
+	ctx, span := c.Tracer.Start(r.Context(), "ConfigurationHandler.Upsert")
+	defer span.End()
+
 	contentType := r.Header.Get("Content-Type")
 	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if mediaType != "application/json" {
 		err := errors.New("expect application/json Content-Type")
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
 		return
 	}
 
 	cfg, err := decodeBody(r.Body)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	ver := model.ToString(cfg.Version)
-	check, err := c.service.Get(cfg.Name, ver)
+	check, err := c.Service.Get(cfg.Name, ver)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if check != nil {
 		err := errors.New("config already exists")
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
 
-	err = c.service.Add(cfg)
+	err = c.Service.Add(cfg)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	renderJSON(w, cfg)
+	renderJSON(ctx, w, cfg)
+	span.SetStatus(codes.Ok, "")
 }
 
 // swagger:route DELETE /configs/{name}/{version} configuration deleteConfiguration
@@ -101,22 +121,28 @@ func (c ConfigurationHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 //	404: ErrorResponse
 //	204: NoContent
 func (c ConfigurationHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	ctx, span := c.Tracer.Start(r.Context(), "ConfigurationHandler.Delete")
+	defer span.End()
+
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
 
-	config, err := c.service.Get(name, version)
+	config, err := c.Service.Get(name, version)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	ok := c.service.Delete(*config)
+	ok := c.Service.Delete(*config)
 	if ok != nil {
+		span.SetStatus(codes.Error, ok.Error())
 		http.Error(w, ok.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+	span.SetStatus(codes.Ok, "")
 }
 
 func decodeBody(r io.Reader) (*model.Configuration, error) {
@@ -130,18 +156,20 @@ func decodeBody(r io.Reader) (*model.Configuration, error) {
 	return &configuration, nil
 }
 
-func renderJSON(w http.ResponseWriter, v interface{}) {
+func renderJSON(ctx context.Context, w http.ResponseWriter, v interface{}) {
 	marshal, err := json.Marshal(v)
 	if err != nil {
+		span := trace.SpanFromContext(ctx)
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(marshal)
 	w.WriteHeader(http.StatusCreated)
-	if err != nil {
+	if _, err = w.Write(marshal); err != nil {
+		span := trace.SpanFromContext(ctx)
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 }

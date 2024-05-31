@@ -1,18 +1,7 @@
-// Post API
-//
-//	Title: ARS Projekat API
-//
-//	Schemes: http
-//	Version: 0.0.1
-//	BasePath: /
-//
-//	Produces:
-//	  - application/json
-//
-// swagger:meta
 package main
 
 import (
+	"ars_projekat/config"
 	"ars_projekat/handlers"
 	"ars_projekat/middleware"
 	"ars_projekat/repositories"
@@ -28,9 +17,28 @@ import (
 
 	swaggerMiddleware "github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 )
 
 func main() {
+	cfg := config.GetConfig()
+
+	ctx := context.Background()
+	exp, err := newExporter(cfg.JaegerAddress)
+	if err != nil {
+		log.Fatalf("failed to initialize exporter: %v", err)
+	}
+	tp := newTraceProvider(exp)
+	defer func() { _ = tp.Shutdown(ctx) }()
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	tracer := tp.Tracer("ars_projekat")
 
 	logger := log.New(os.Stdout, "[config-api]", log.LstdFlags)
 
@@ -54,6 +62,8 @@ func main() {
 	limiter := middleware.NewRateLimiter(time.Second, 3)
 
 	router := mux.NewRouter()
+	router.Use(otelmux.Middleware("ars_projekat"))
+
 	router.Use(func(next http.Handler) http.Handler {
 		return middleware.AdaptHandler(next, limiter)
 	})
@@ -117,4 +127,31 @@ func main() {
 	}
 
 	log.Println("Stopped server")
+}
+
+func newExporter(address string) (*jaeger.Exporter, error) {
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(address)))
+	if err != nil {
+		return nil, err
+	}
+	return exp, nil
+}
+
+func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
+	r, err := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("ars_projekat"),
+		),
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exp),
+		sdktrace.WithResource(r),
+	)
 }
