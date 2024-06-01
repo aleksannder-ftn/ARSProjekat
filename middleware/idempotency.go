@@ -3,6 +3,8 @@ package middleware
 import (
 	"ars_projekat/model"
 	"ars_projekat/services"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"net/http"
 	"sync"
 )
@@ -10,17 +12,21 @@ import (
 type Idempotency struct {
 	mux     sync.Mutex
 	service *services.IdempotencyService
+	Tracer  trace.Tracer
 }
 
-func NewIdempotency(idempotencyService *services.IdempotencyService) *Idempotency {
+func NewIdempotency(idempotencyService *services.IdempotencyService, tracer trace.Tracer) *Idempotency {
 	return &Idempotency{
 		service: idempotencyService,
+		Tracer:  tracer,
 	}
 }
 
 func AdaptIdempotencyHandler(handler http.Handler, idempotencyMiddleware *Idempotency) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
+		ctx, span := idempotencyMiddleware.Tracer.Start(r.Context(), "IdempotencyHandler.Adapter")
+		defer span.End()
 		idempotencyMiddleware.mux.Lock()
 		defer idempotencyMiddleware.mux.Unlock()
 
@@ -30,12 +36,14 @@ func AdaptIdempotencyHandler(handler http.Handler, idempotencyMiddleware *Idempo
 			newRequest.SetKey(idempotencyKey)
 
 			if idempotencyKey == "" {
+				//span.SetStatus(codes.Unset, "Key missing")
 				http.Error(w, "Idempotency-Key header is missing", http.StatusBadRequest)
 				return
 			}
 
-			processed, err := idempotencyMiddleware.service.Get(idempotencyKey)
+			processed, err := idempotencyMiddleware.service.Get(idempotencyKey, ctx)
 			if err != nil {
+				span.SetStatus(codes.Error, err.Error())
 				http.Error(w, "Error checking idempotency: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -46,7 +54,7 @@ func AdaptIdempotencyHandler(handler http.Handler, idempotencyMiddleware *Idempo
 				return
 			}
 
-			idempotencyMiddleware.service.Add(&newRequest)
+			idempotencyMiddleware.service.Add(&newRequest, ctx)
 			handler.ServeHTTP(w, r)
 			return
 		}

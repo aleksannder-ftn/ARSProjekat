@@ -58,10 +58,15 @@ func (cg ConfigurationGroupHandler) Get(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	cGroup, err := cg.GroupService.Get(name, *versionModel, labelString)
+	cGroup, err := cg.GroupService.Get(name, *versionModel, labelString, ctx)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	if cGroup == nil {
+		http.Error(w, "no content", http.StatusNoContent)
 		return
 	}
 
@@ -91,7 +96,7 @@ func (cg ConfigurationGroupHandler) AddConfig(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	cGroup, err := cg.GroupService.Get(name, *versionModel, "")
+	cGroup, err := cg.GroupService.Get(name, *versionModel, "", ctx)
 	if cGroup == nil {
 		err = errors.New("config not found")
 		span.SetStatus(codes.Error, err.Error())
@@ -136,7 +141,7 @@ func (cg ConfigurationGroupHandler) AddConfig(w http.ResponseWriter, r *http.Req
 	}
 
 	cGroup.Configurations = append(cGroup.Configurations, *config)
-	err = cg.GroupService.Save(cGroup)
+	err = cg.GroupService.Save(cGroup, ctx)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -181,7 +186,7 @@ func (cg ConfigurationGroupHandler) Upsert(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = cg.GroupService.Add(*cfgGroup)
+	err = cg.GroupService.Add(*cfgGroup, ctx)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -223,7 +228,7 @@ func (cg ConfigurationGroupHandler) Delete(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	check, err := cg.GroupService.Get(name, *versionModel, labelString)
+	check, err := cg.GroupService.Get(name, *versionModel, labelString, ctx)
 	if check == nil {
 		err = errors.New("config not found")
 		span.SetStatus(codes.Error, err.Error())
@@ -236,7 +241,7 @@ func (cg ConfigurationGroupHandler) Delete(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	ok := cg.GroupService.Delete(name, version, labelString)
+	ok := cg.GroupService.Delete(name, version, labelString, ctx)
 	if ok != nil {
 		span.SetStatus(codes.Error, ok.Error())
 		http.Error(w, ok.Error(), http.StatusInternalServerError)

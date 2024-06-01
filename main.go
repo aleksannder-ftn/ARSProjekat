@@ -27,6 +27,8 @@ import (
 )
 
 func main() {
+
+	// Jaeger startup
 	cfg := config.GetConfig()
 
 	ctx := context.Background()
@@ -37,24 +39,24 @@ func main() {
 	tp := newTraceProvider(exp)
 	defer func() { _ = tp.Shutdown(ctx) }()
 	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.TraceContext{})
 	tracer := tp.Tracer("ars_projekat")
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 
 	logger := log.New(os.Stdout, "[config-api]", log.LstdFlags)
 
-	store, err := repositories.New(logger)
+	store, err := repositories.New(logger, tracer)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	configService := services.NewConfigurationService(*store)
-	configHandler := handlers.NewConfigurationHandler(configService)
+	configService := services.NewConfigurationService(*store, tracer)
+	configHandler := handlers.NewConfigurationHandler(configService, tracer)
 
-	configGroupService := services.NewConfigurationGroupService(*store)
-	configGroupHandler := handlers.NewConfigurationGroupHandler(configGroupService)
+	configGroupService := services.NewConfigurationGroupService(*store, tracer)
+	configGroupHandler := handlers.NewConfigurationGroupHandler(configGroupService, tracer)
 
-	idempotencyService := services.NewIdempotencyService(*store)
-	idempotencyMiddleware := middleware.NewIdempotency(&idempotencyService)
+	idempotencyService := services.NewIdempotencyService(*store, tracer)
+	idempotencyMiddleware := middleware.NewIdempotency(&idempotencyService, tracer)
 
 	metricsService := services.NewMetricsService()
 	metricsMiddleware := middleware.NewMetrics(metricsService)

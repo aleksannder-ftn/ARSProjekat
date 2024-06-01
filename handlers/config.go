@@ -42,7 +42,7 @@ func (c ConfigurationHandler) Get(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
 
-	config, err := c.Service.Get(name, version)
+	config, err := c.Service.Get(name, version, ctx)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -89,7 +89,7 @@ func (c ConfigurationHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ver := model.ToString(cfg.Version)
-	check, err := c.Service.Get(cfg.Name, ver)
+	check, err := c.Service.Get(cfg.Name, ver, ctx)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -103,7 +103,7 @@ func (c ConfigurationHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = c.Service.Add(cfg)
+	err = c.Service.Add(cfg, ctx)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -127,14 +127,14 @@ func (c ConfigurationHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
 
-	config, err := c.Service.Get(name, version)
+	config, err := c.Service.Get(name, version, ctx)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	ok := c.Service.Delete(*config)
+	ok := c.Service.Delete(*config, ctx)
 	if ok != nil {
 		span.SetStatus(codes.Error, ok.Error())
 		http.Error(w, ok.Error(), http.StatusInternalServerError)
