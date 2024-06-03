@@ -3,6 +3,7 @@ package handlers
 import (
 	"ars_projekat/model"
 	"ars_projekat/services"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -34,7 +35,7 @@ func (c ConfigurationHandler) Get(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
 
-	config, err := c.service.Get(name, version)
+	config, err := c.service.Get(name, version, context.Background())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -73,7 +74,7 @@ func (c ConfigurationHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ver := model.ToString(cfg.Version)
-	check, err := c.service.Get(cfg.Name, ver)
+	check, err := c.service.Get(cfg.Name, ver, context.Background())
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -85,7 +86,7 @@ func (c ConfigurationHandler) Upsert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = c.service.Add(cfg)
+	err = c.service.Add(cfg, context.Background())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -104,13 +105,13 @@ func (c ConfigurationHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	version := mux.Vars(r)["version"]
 
-	config, err := c.service.Get(name, version)
+	config, err := c.service.Get(name, version, context.Background())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	ok := c.service.Delete(*config)
+	ok := c.service.Delete(*config, context.Background())
 	if ok != nil {
 		http.Error(w, ok.Error(), http.StatusInternalServerError)
 		return

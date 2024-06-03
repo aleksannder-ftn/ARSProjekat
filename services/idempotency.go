@@ -3,6 +3,7 @@ package services
 import (
 	"ars_projekat/model"
 	"ars_projekat/repositories"
+	"context"
 )
 
 type IdempotencyService struct {
@@ -16,7 +17,7 @@ func NewIdempotencyService(repo repositories.ConfigRepository) IdempotencyServic
 }
 
 func (i IdempotencyService) Add(req *model.IdempotencyRequest) error {
-	_, err := i.repo.AddIdempotencyRequest(req)
+	_, err := i.repo.AddIdempotencyRequest(req, context.Background())
 	if err != nil {
 		return err
 	}
@@ -24,7 +25,7 @@ func (i IdempotencyService) Add(req *model.IdempotencyRequest) error {
 }
 
 func (i IdempotencyService) Get(key string) (bool, error) {
-	exists, err := i.repo.GetIdempotencyRequestByKey(key)
+	exists, err := i.repo.GetIdempotencyRequestByKey(key, context.Background())
 	if err != nil {
 		return false, err
 	}
