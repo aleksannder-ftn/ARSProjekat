@@ -12,6 +12,9 @@ import (
 	"os"
 
 	"github.com/hashicorp/consul/api"
+
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ConfigRepository struct {
@@ -301,4 +304,18 @@ func (cr *ConfigRepository) AddIdempotencyRequest(req *model.IdempotencyRequest,
 
 	span.SetStatus(codes.Ok, "Success, finishing up")
 	return req, nil
+}
+
+type IConfigRepository interface {
+	GetAll(ctx context.Context) ([]model.Configuration, error)
+	GetById(name string, version string, ctx context.Context) (*model.Configuration, error)
+	Delete(name string, version string, ctx context.Context) error
+	Add(config *model.Configuration, ctx context.Context) (*model.Configuration, error)
+	GetAllGroups(ctx context.Context) ([]model.ConfigurationGroup, error)
+	GetGroupByParams(name string, version string, labels string) (*model.ConfigurationGroup, error)
+	AddGroup(name string, version string, labels string, configs model.Configuration, ctx context.Context) error
+	DeleteGroupById(name string, version string, ctx context.Context) error
+	DeleteGroupByParams(name string, version string, labels string, ctx context.Context) error
+	GetIdempotencyRequestByKey(key string, ctx context.Context) (bool, error)
+	AddIdempotencyRequest(req *model.IdempotencyRequest, ctx context.Context) (*model.IdempotencyRequest, error)
 }
