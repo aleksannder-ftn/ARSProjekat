@@ -16,7 +16,7 @@ func TestConfigurationService_Add(t *testing.T) {
 
 	mockRepo := new(repositories.MockConfigRepository)
 	mockRepo.On("Add", config, mock.Anything).Return(config, nil)
-	service := services.NewConfigurationService(mockRepo)
+	service := services.NewConfigurationService(mockRepo, context.Background())
 
 	err := service.Add(config, context.Background())
 	assert.NoError(t, err)

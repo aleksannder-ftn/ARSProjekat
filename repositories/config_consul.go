@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/otel/codes"
+
 	"go.opentelemetry.io/otel/trace"
 	"log"
 	"os"
@@ -14,7 +14,6 @@ import (
 	"github.com/hashicorp/consul/api"
 
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type ConfigRepository struct {
@@ -312,7 +311,7 @@ type IConfigRepository interface {
 	Delete(name string, version string, ctx context.Context) error
 	Add(config *model.Configuration, ctx context.Context) (*model.Configuration, error)
 	GetAllGroups(ctx context.Context) ([]model.ConfigurationGroup, error)
-	GetGroupByParams(name string, version string, labels string) (*model.ConfigurationGroup, error)
+	GetGroupByParams(name string, version string, labels string, ctx context.Context) (*model.ConfigurationGroup, error)
 	AddGroup(name string, version string, labels string, configs model.Configuration, ctx context.Context) error
 	DeleteGroupById(name string, version string, ctx context.Context) error
 	DeleteGroupByParams(name string, version string, labels string, ctx context.Context) error

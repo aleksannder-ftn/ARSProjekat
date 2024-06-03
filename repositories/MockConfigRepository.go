@@ -40,7 +40,7 @@ func (m *MockConfigRepository) GetAllGroups(ctx context.Context) ([]model.Config
 	return args.Get(0).([]model.ConfigurationGroup), args.Error(1)
 }
 
-func (m *MockConfigRepository) GetGroupByParams(name string, version string, labels string) (*model.ConfigurationGroup, error) {
+func (m *MockConfigRepository) GetGroupByParams(name string, version string, labels string, ctx context.Context) (*model.ConfigurationGroup, error) {
 	args := m.Called(name, version, labels)
 	return args.Get(0).(*model.ConfigurationGroup), args.Error(1)
 }
