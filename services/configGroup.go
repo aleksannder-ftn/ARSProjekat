@@ -9,11 +9,11 @@ import (
 )
 
 type ConfigurationGroupService struct {
-	repo   repositories.ConfigRepository
+	repo   repositories.IConfigRepository
 	Tracer trace.Tracer
 }
 
-func NewConfigurationGroupService(repo repositories.ConfigRepository, tracer trace.Tracer) ConfigurationGroupService {
+func NewConfigurationGroupService(repo repositories.IConfigRepository, tracer trace.Tracer) ConfigurationGroupService {
 	return ConfigurationGroupService{
 		repo:   repo,
 		Tracer: tracer,
