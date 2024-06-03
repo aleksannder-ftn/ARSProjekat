@@ -49,10 +49,10 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	configService := services.NewConfigurationService(*store, tracer)
+	configService := services.NewConfigurationService(store, tracer)
 	configHandler := handlers.NewConfigurationHandler(configService, tracer)
 
-	configGroupService := services.NewConfigurationGroupService(*store, tracer)
+	configGroupService := services.NewConfigurationGroupService(store, tracer)
 	configGroupHandler := handlers.NewConfigurationGroupHandler(configGroupService, tracer)
 
 	idempotencyService := services.NewIdempotencyService(*store, tracer)

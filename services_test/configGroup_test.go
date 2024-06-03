@@ -4,6 +4,7 @@ import (
 	"ars_projekat/model"
 	"ars_projekat/repositories"
 	"ars_projekat/services"
+	"context"
 
 	"testing"
 
@@ -27,9 +28,9 @@ func TestConfigurationGroupService_Add(t *testing.T) {
 		mockRepo.On("AddGroup", configGroup.Name, model.ToString(configGroup.Version), model.SortLabels(config.Labels), config, mock.Anything).Return(nil)
 	}
 
-	service := services.NewConfigurationGroupService(mockRepo)
+	service := services.NewConfigurationGroupService(mockRepo, NewTestTracer())
 
-	err := service.Add(configGroup)
+	err := service.Add(configGroup, context.Background())
 	assert.NoError(t, err)
 
 	// Check that AddGroup was called with the expected parameters for each configuration
@@ -41,7 +42,7 @@ func TestConfigurationGroupService_Add(t *testing.T) {
 
 func TestConfigurationGroupService_Save(t *testing.T) {
 	mockRepo := new(repositories.MockConfigRepository)
-	service := services.NewConfigurationGroupService(mockRepo)
+	service := services.NewConfigurationGroupService(mockRepo, NewTestTracer())
 
 	configGroup := &model.ConfigurationGroup{
 		Name:    "testGroup",
@@ -55,7 +56,7 @@ func TestConfigurationGroupService_Save(t *testing.T) {
 		mockRepo.On("AddGroup", configGroup.Name, model.ToString(configGroup.Version), model.SortLabels(config.Labels), config, mock.Anything).Return(nil)
 	}
 
-	err := service.Save(configGroup)
+	err := service.Save(configGroup, context.Background())
 	assert.NoError(t, err)
 
 	for _, config := range configGroup.Configurations {
@@ -66,7 +67,7 @@ func TestConfigurationGroupService_Save(t *testing.T) {
 
 func TestConfigurationGroupService_Get(t *testing.T) {
 	mockRepo := new(repositories.MockConfigRepository)
-	service := services.NewConfigurationGroupService(mockRepo)
+	service := services.NewConfigurationGroupService(mockRepo, NewTestTracer())
 
 	name := "testGroup"
 	version := model.Version{Major: 1, Minor: 0, Patch: 0}
@@ -78,7 +79,7 @@ func TestConfigurationGroupService_Get(t *testing.T) {
 
 	mockRepo.On("GetGroupByParams", name, model.ToString(version), labels, mock.Anything).Return(configGroup, nil)
 
-	retrievedGroup, err := service.Get(name, version, labels)
+	retrievedGroup, err := service.Get(name, version, labels, context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, configGroup, retrievedGroup)
 
@@ -87,7 +88,7 @@ func TestConfigurationGroupService_Get(t *testing.T) {
 
 func TestConfigurationGroupService_Delete(t *testing.T) {
 	mockRepo := new(repositories.MockConfigRepository)
-	service := services.NewConfigurationGroupService(mockRepo)
+	service := services.NewConfigurationGroupService(mockRepo, NewTestTracer())
 
 	name := "testGroup"
 	version := "1.0.0"
@@ -95,7 +96,7 @@ func TestConfigurationGroupService_Delete(t *testing.T) {
 
 	mockRepo.On("DeleteGroupByParams", name, version, labels, mock.Anything).Return(nil)
 
-	err := service.Delete(name, version, labels)
+	err := service.Delete(name, version, labels, context.Background())
 	assert.NoError(t, err)
 
 	mockRepo.AssertExpectations(t)
