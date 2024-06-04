@@ -3,15 +3,23 @@ name: CI
 on:
   push:
     branches:
-      - main
+      - develop
 
 jobs:
   build:
+    strategy:
+      matrix:
+        go-version: ['1.22.0']
     runs-on: ubuntu-latest
     steps:
       -
         name: Checkout
         uses: actions/checkout@v4
+      -
+        name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
       -
         name: Running unit tests
         uses: go test ./services_test/
