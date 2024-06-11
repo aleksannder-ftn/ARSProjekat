@@ -8,23 +8,38 @@
 ![Swagger](https://img.shields.io/badge/Swagger-green?logo=swagger&logoColor=white)
 ![Postman](https://img.shields.io/badge/Postman-orange?logo=postman&logoColor=black)
 
-## Technologies Used
-Main technologies which are used in this project are **Golang** with **Consul** DB. For sending APIs you can use **Swagger** or **Postman** also app is containerized with **Docker**.  
-For analytics storage we used **Prometheus** and for tracing storage we used **Jaeger**.  
+## Overview  
+This service has been made as an introduction to the domain of distributed systems and cloud computing. It is based on real life problems which come with cloud computing.  
 
-## Overview:  
-There are two main components in this app: **Web Service** which handle requests and **Consul** DB.  
-Also there are two side components: First for storing logs and traces - **Jaeger** and second for storing metrics - **Prometheus**. 
+This particular service has been made to solve the problem of automatizing configuration management within our distributed application.
+The service enables various microservices/users to access their needed configurations as well as create new configurations, update existing ones and delete them.  
+
+In addition to that we have added various tools used for analytics and DevOps, such as the **Prometheus** library for metrics, **Jaeger** for tracing while managing our workflow with **Github Actions**  
+The data is persisted on a K/V NoSQL DB (in our case Consul)
+
+## Technologies Used
+The backbone of our service is coded in **Go**  
+Data is persisted in **Consul** as Key-Value pairs  
+For tracing and metrics we used **Jaeger tracing** paired with **Prometheus**  
+Documenting and testing was done using **OpenAPI Swagger**  
+Integration and deployment is done using **Github Actions** and **Docker**
 
 ## Getting Started:  
-To start this project you need to have installed next things:  
-**Visual Studio Code or other IDE**, **Golang**, **Docker** and optional **Postman**.
+Requirements for starting this application are **Docker** and all of it's codependencies, as well as **Docker compose**  
+To run the application first navigate to the root folder of the repository and open a terminal with Administrator Privileges within that folder
+```shell
+docker compose up
+```
 
-## POSTMAN
-**Postman Docs/Collection**: .............................................................treba dodati link
+If you're using linux try running it with elevated privileges
 
-## SWAGGER
-.............................................................................................treba ispisati nesto ukratko za swagger 2-3 recenice
+## Postman Collection
+[**Postman Docs/Collection**](https://www.postman.com/aleksannder-z/workspace/ars/documentation/30371859-c57d1009-c8cf-4c29-890a-88e412d26ff3) 
+
+## Swagger
+**Swagger** is a powerful tool for designing and documenting RESTful web services. Swagger provides a user-friendly interface for developers to visualize and interact with the API's resources without needing to access the backend logic  
+This API was made according to the **OpenAPI 2.0** specification.
+You can access the documentation of this API via this [link](http://localhost:8000/docs) once the application is running.  
 
 ## Idempotency  
 **What is Idempotency middleware** ? The idempotency middleware ensures that repeated requests with the same parameters produce the same result, regardless of how many times they are sent. It helps prevent unintended side effects caused by duplicate requests, such as duplicate charges in a payment system or duplicate updates in a database. By generating and storing a unique identifier for each request and its corresponding response, the middleware can check incoming requests against this identifier. If a request with the same identifier is received again, the middleware can retrieve the previous response associated with that identifier and return it without executing the request handler again. This middleware adds an extra layer of reliability and safety to your application, especially in distributed systems where duplicate requests are more likely to occur.  
@@ -32,7 +47,7 @@ We are storing Idempotency-Key in our **Consul** DB.
 
 ## Database:  
 **Consul** is a NoSQL database designed for storing key-value pairs. We chose Consul for its simplicity and suitability for our project specifications. To access the **Consul UI**, use the port **8500**.  
-This will allow you to manage and interact with your Consul data effortlessly.
+This will allow you to manage and interact with your persisted data effortlessly.
 
 ## Testing:  
 We have implemented unit tests for all services in this project.  
@@ -50,8 +65,14 @@ These unit tests are designed to ensure the functionality of individual componen
 
 
 ## Tracing:  
-..............................................................................treba ispisati dokumentaciju za trejsing
+In our application we integrated [Jaeger](https://www.jaegertracing.io/) for distributed tracing to monitor and troubleshoot the performance of our services.
 
+Jaeger gives us insight into the execution flow and helps us with identifying latency problems after our service has been deployed  
+The implementation was done using the **Jaeger client for Go** together with the transitive [**OpenTelemetry**](https://opentelemetry.io/) dependencies required
+for tracing.
+
+
+You can access the [Jaeger UI](http://localhost:16686) through this link when the application is running.
 
 
 ## Deploy:  
@@ -104,8 +125,9 @@ This docker-compose.yml file is used to define and manage the services required 
 -ports: Maps Jaeger ports for tracing and the Jaeger UI.  
 -networks: Connects the service to a user-defined network.    
 
-## CI PIPELINE  
-.................................................................................................................... treba uraditi i ovo   
+## CI pipeline  
+Among all of the other tools we used, we also used **Github Actions** to create a CI pipeline.  
+In our particular case we have one action which tests, builds and uploads our application to a [**Dockerhub**](https://hub.docker.com/r/aleksannderz57/ars_projekat) remote.
 
 ## Authors  
 
