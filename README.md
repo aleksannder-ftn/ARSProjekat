@@ -9,7 +9,8 @@
 ![Postman](https://img.shields.io/badge/Postman-orange?logo=postman&logoColor=black)
 
 ## Technologies Used
-Main technologies which are used in this project are **Golang** with **Consul** DB. For sending APIs you can use **Swagger** or **Postman** also app is containerized with **Docker**.
+Main technologies which are used in this project are **Golang** with **Consul** DB. For sending APIs you can use **Swagger** or **Postman** also app is containerized with **Docker**.  
+For analytics storage we used **Prometheus** and for tracing storage we used **Jaeger**.  
 
 ## Overview:  
 There are two main components in this app: **Web Service** which handle requests and **Consul** DB.  
