@@ -57,14 +57,14 @@ These unit tests are designed to ensure the functionality of individual componen
 
 ### Dockerfile  
 **We used Multi-Stage build for lighter final image**  
--**BUILD ENVIROMENT**  
+#### BUILD ENVIROMENT  
 **FROM golang:1.22-alpine AS build:** Use Go 1.22 on Alpine Linux as the build environment.  
 **WORKDIR /app:** Set the working directory inside the container to /app.  
 **COPY go.mod go.sum ./:** Copy dependency files into the container.  
 **RUN go mod download:** Download Go module dependencies.  
 **COPY . .:** Copy all project files into the container.  
 **RUN go build -o app .:** Compile the Go application and output the binary as app.    
--**RUNTIME ENVIROMENT**  
+#### RUNTIME ENVIROMENT    
 **FROM alpine:** Use the latest Alpine Linux as the runtime environment.  
 **WORKDIR /app:** Set the working directory to /app.  
 **COPY --from=build /app/app .:** Copy the built application binary from the build stage.  
